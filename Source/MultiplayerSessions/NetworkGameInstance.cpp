@@ -63,5 +63,8 @@ void UNetworkGameInstance::JoinOnlineGame()
 
 void UNetworkGameInstance::DestroySessionAndLeaveGame()
 {
-	m_OnlineSubsystem->DestroySessionAndLeaveGame();
+	const FString sessionName(LexToString(GameSessionName));
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Destroying Session: %s"), *sessionName));
+		
+	m_OnlineSubsystem->DestroySessionAndLeaveGame(GameSessionName);
 }

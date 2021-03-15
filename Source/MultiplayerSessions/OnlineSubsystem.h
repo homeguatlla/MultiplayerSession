@@ -10,10 +10,11 @@ public:
 	bool HostSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
 	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
-	void DestroySessionAndLeaveGame() const;
+	void DestroySessionAndLeaveGame(FName SessionName) const;
 	bool FillWithSession(ULocalPlayer* player, FOnlineSessionSearchResult& searchResult) const;
 
 private:
+	IOnlineSessionPtr GetSession() const;
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
