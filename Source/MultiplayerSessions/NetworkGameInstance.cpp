@@ -20,8 +20,10 @@ void UNetworkGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver *NetD
 
 void UNetworkGameInstance::InitializeOnlineSubsystem()
 {
-	m_OnlineSubsystem = MakeShareable(new OnlineSubsystem(GetWorld()));
-	m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnCreateAndStartSessionComplete);
+	m_OnlineSubsystem =  MakeShareable(new OnlineSubsystem(GetWorld()));
+	OnCreateSessionCompleteDelegateHandle = m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnCreateAndStartSessionComplete);
+	OnDestroySessionCompleteDelegateHandle = m_OnlineSubsystem->OnDestroySessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnDestroySessionComplete);
+	OnFindSessionsCompleteDelegateHandle = m_OnlineSubsystem->OnFindSessionsCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnFindSessionsComplete);
 }
 
 void UNetworkGameInstance::StartGameInstance()
@@ -29,14 +31,14 @@ void UNetworkGameInstance::StartGameInstance()
 	Super::StartGameInstance();
 	
 	InitializeOnlineSubsystem();
-	//GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
+	GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 }
 
 FGameInstancePIEResult UNetworkGameInstance::StartPlayInEditorGameInstance(ULocalPlayer* localPlayer,
                                                                            const FGameInstancePIEParameters& params)
 {
 	InitializeOnlineSubsystem();
-	//GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
+	GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 	return Super::StartPlayInEditorGameInstance(localPlayer, params);
 }
 
@@ -53,6 +55,7 @@ void UNetworkGameInstance::FindSessions()
 {
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 
+	m_SessionIdToFound.Empty();
 	m_OnlineSubsystem->FindSessions(Player->GetPreferredUniqueNetId().GetUniqueNetId(), true, true);
 }
 
@@ -60,11 +63,10 @@ void UNetworkGameInstance::JoinSession()
 {
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 
-	FOnlineSessionSearchResult SearchResult;
-	if(m_OnlineSubsystem->FillWithSession(Player, SearchResult))
+	if(!m_SessionIdToFound.IsEmpty())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session connecting: %s"), *SearchResult.Session.OwningUserName));
-		m_OnlineSubsystem->JoinSession(Player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, SearchResult);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session connecting: %s"), *m_SessionIdToFound));
+		m_OnlineSubsystem->JoinSession(Player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, m_SessionIdToFound);
 	}
 }
 
@@ -73,19 +75,35 @@ void UNetworkGameInstance::DestroySessionAndLeaveGame()
 	const FString sessionName(LexToString(GameSessionName));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Destroying Session: %s"), *sessionName));
 		
-	m_OnlineSubsystem->DestroySessionAndLeaveGame(GameSessionName);
+	m_OnlineSubsystem->DestroySession(GameSessionName);
 }
 
-void UNetworkGameInstance::OnCreateAndStartSessionCompleteEvent_Implementation()
+void UNetworkGameInstance::OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const
 {
-}
-
-void UNetworkGameInstance::OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful)
-{
+	m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().Remove(OnCreateSessionCompleteDelegateHandle);
+	
 	if (bWasSuccessful)
 	{
-		Execute_OnCreateAndStartSessionCompleteEvent(this);
-		//Execute_OnCreateAndStartSessionCompleteEvent(this);
 		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
+	}
+}
+
+void UNetworkGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const
+{
+	m_OnlineSubsystem->OnDestroySessionCompleteDelegate().Remove(OnDestroySessionCompleteDelegateHandle);
+	
+	if (bWasSuccessful)
+	{
+		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonExampleMap", true);
+	}
+}
+
+void UNetworkGameInstance::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful)
+{
+	m_OnlineSubsystem->OnFindSessionsCompleteDelegate().Remove(OnFindSessionsCompleteDelegateHandle);
+	
+	if(bWasSuccessful)
+	{
+		m_SessionIdToFound = Sessions->SearchResults[0].GetSessionIdStr();
 	}
 }

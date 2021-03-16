@@ -33,14 +33,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
 
-	void OnCreateAndStartSessionCompleteEvent_Implementation() override;
 private:
 	void StartGameInstance() override;
 	FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* localPlayer, const FGameInstancePIEParameters& params) override;
 
 	void InitializeOnlineSubsystem();
-	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const;
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const;
+	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful);
 
+	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
+	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
+	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
 	
 	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
+	FString m_SessionIdToFound;
 };

@@ -9,17 +9,20 @@ public:
 	
 	bool CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
-	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
-	void DestroySessionAndLeaveGame(FName SessionName) const;
-	bool FillWithSession(ULocalPlayer* player, FOnlineSessionSearchResult& searchResult) const;
+	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName,  const FString& SessionId);
+	void DestroySession(FName SessionName) const;
 
 	/** Handles to various registered delegates */
 	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnCreateAndStartSessionComplete, FName /*SessionName*/, bool /*bWasSuccessful*/);
 	FOnCreateAndStartSessionComplete& OnCreateAndStartSessionCompleteDelegate() { return m_CreateAndStartSessionComplete; }
-	
+	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnDestroySessionComplete, FName /*SessionName*/, bool /*bWasSuccessful*/);
+	FOnDestroySessionComplete& OnDestroySessionCompleteDelegate() { return m_DestroySessionComplete; }
+	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnFindSessionsComplete, TSharedPtr<class FOnlineSessionSearch>, bool /*bWasSuccessful*/);
+	FOnFindSessionsComplete& OnFindSessionsCompleteDelegate() { return m_FindSessionsComplete; }
 
 private:
 	IOnlineSessionPtr GetSession() const;
+	bool FillWithSessionBySessionId(const FString& sessionId, FOnlineSessionSearchResult& searchResult) const;	
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
@@ -27,10 +30,10 @@ private:
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteInternalDelegate;
-	FOnStartSessionCompleteDelegate OnStartSessionCompleteDelegate;
-	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
-	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;    
-	FOnDestroySessionCompleteDelegate OnDestroySessionCompleteDelegate;
+	FOnStartSessionCompleteDelegate OnStartSessionCompleteInternalDelegate;
+	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteInternalDelegate;
+	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteInternalDelegate;    
+	FOnDestroySessionCompleteDelegate OnDestroySessionCompleteInternalDelegate;
 	
 	/** Handles to registered delegates for creating/starting a session */
 	FDelegateHandle OnCreateSessionCompleteInternalDelegateHandle;
@@ -45,7 +48,10 @@ private:
 	/** Handle to registered delegate for destroying a session */
 	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
 
-	FOnCreateAndStartSessionComplete m_CreateAndStartSessionComplete;	
+	FOnCreateAndStartSessionComplete m_CreateAndStartSessionComplete;
+	FOnDestroySessionComplete m_DestroySessionComplete;
+	FOnFindSessionsComplete m_FindSessionsComplete;
+	
 	TSharedPtr<class FOnlineSessionSettings> SessionSettings;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 

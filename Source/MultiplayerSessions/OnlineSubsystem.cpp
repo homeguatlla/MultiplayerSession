@@ -1,5 +1,7 @@
 ﻿#include "OnlineSubsystem.h"
 #include "Public/OnlineSubsystem.h"
+
+#include "AutomatedAssetImportData.h"
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,10 +12,10 @@ m_World{world}
 	check(world);
 	
 	OnCreateSessionCompleteInternalDelegate = FOnCreateSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnCreateSessionComplete);
-	OnStartSessionCompleteDelegate = FOnStartSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnStartOnlineGameComplete);
-	OnFindSessionsCompleteDelegate = FOnFindSessionsCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnFindSessionsComplete);
-	OnJoinSessionCompleteDelegate = FOnJoinSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnJoinSessionComplete);
-	OnDestroySessionCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnDestroySessionComplete);
+	OnStartSessionCompleteInternalDelegate = FOnStartSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnStartOnlineGameComplete);
+	OnFindSessionsCompleteInternalDelegate = FOnFindSessionsCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnFindSessionsComplete);
+	OnJoinSessionCompleteInternalDelegate = FOnJoinSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnJoinSessionComplete);
+	OnDestroySessionCompleteInternalDelegate = FOnDestroySessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnDestroySessionComplete);
 }
 
 bool OnlineSubsystem::CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
@@ -75,31 +77,34 @@ void OnlineSubsystem::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool b
 	TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SessionSearch.ToSharedRef();
 
 	// Set the Delegate to the Delegate Handle of the FindSession function
-	OnFindSessionsCompleteDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
+	OnFindSessionsCompleteDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteInternalDelegate);
 	
 	// Finally call the SessionInterface function. The Delegate gets called once this is finished
 	Sessions->FindSessions(*UserId, SearchSettingsRef);
 }
 
-bool OnlineSubsystem::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult)
+bool OnlineSubsystem::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FString& SessionId)
 {
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (!Sessions || !UserId.IsValid())
 	{
-		OnFindSessionsComplete(false);
 		return false;
 	}
 
 	// Set the Handle again
-	OnJoinSessionCompleteDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegate);
+	OnJoinSessionCompleteDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteInternalDelegate);
+
+	FOnlineSessionSearchResult searchResult;
+	if(FillWithSessionBySessionId(SessionId, searchResult))
+	{
+		return Sessions->JoinSession(*UserId, SessionName, searchResult);
+	}
 	
-	// Call the "JoinSession" Function with the passed "SearchResult". The "SessionSearch->SearchResults" can be used to get such a
-	// "FOnlineSessionSearchResult" and pass it. Pretty straight forward!
-	return Sessions->JoinSession(*UserId, SessionName, SearchResult);
+	return false;
 }
 
-void OnlineSubsystem::DestroySessionAndLeaveGame(FName SessionName) const
+void OnlineSubsystem::DestroySession(FName SessionName) const
 {
 	IOnlineSessionPtr Sessions = GetSession();
 
@@ -108,27 +113,8 @@ void OnlineSubsystem::DestroySessionAndLeaveGame(FName SessionName) const
 		return;
 	}
 	
-	Sessions->AddOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegate);
+	Sessions->AddOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteInternalDelegate);
 	Sessions->DestroySession(SessionName);
-}
-
-bool OnlineSubsystem::FillWithSession(ULocalPlayer* player, FOnlineSessionSearchResult& searchResult) const
-{
-	check(player);
-
-	for (int32 i = 0; i < SessionSearch->SearchResults.Num(); i++)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session: %s"), *SessionSearch->SearchResults[i].Session.OwningUserName));
-
-		// To avoid something crazy, we filter sessions from ourself
-		if (SessionSearch->SearchResults[i].Session.OwningUserId != player->GetPreferredUniqueNetId())
-		{
-			searchResult = SessionSearch->SearchResults[i];
-			return true;
-		}
-	}
-
-	return false;
 }
 
 IOnlineSessionPtr OnlineSubsystem::GetSession() const
@@ -141,7 +127,6 @@ IOnlineSessionPtr OnlineSubsystem::GetSession() const
 		return nullptr;
 	}
 	
-	// Get the Session Interface, so we can call the "CreateSession" function on it
 	IOnlineSessionPtr sessions = OnlineSub->GetSessionInterface();
 
 	if (sessions.IsValid())
@@ -152,79 +137,68 @@ IOnlineSessionPtr OnlineSubsystem::GetSession() const
 	return nullptr;
 }
 
+bool OnlineSubsystem::FillWithSessionBySessionId(const FString& sessionId, FOnlineSessionSearchResult& searchResult) const
+{
+	for (auto&& session : SessionSearch->SearchResults)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session: %s"), *SessionSearch->SearchResults[i].Session.OwningUserName));
+
+		if (session.Session.GetSessionIdStr() == sessionId)
+		{
+			searchResult = session;
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 void OnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	const auto color = bWasSuccessful ? FColor::Green : FColor::Red;
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, color, FString::Printf(TEXT("OnCreateSessionComplete %s, %d"), *SessionName.ToString(), bWasSuccessful));
-
 	IOnlineSessionPtr Sessions = GetSession();
 
-	if (!Sessions)
+	if (Sessions)
 	{
-		return;
+		Sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegateHandle);
+		if (bWasSuccessful)
+		{
+			OnStartSessionCompleteDelegateHandle = Sessions->AddOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteInternalDelegate);
+			Sessions->StartSession(SessionName);
+			return;
+		}
 	}
 		
-	// Clear the SessionComplete delegate handle, since we finished this call
-	Sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegateHandle);
-	if (bWasSuccessful)
+	if(m_CreateAndStartSessionComplete.IsBound())
 	{
-		// Set the StartSession delegate handle
-		OnStartSessionCompleteDelegateHandle = Sessions->AddOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegate);
-
-		// Our StartSessionComplete delegate should get called after this
-		Sessions->StartSession(SessionName);
+		m_CreateAndStartSessionComplete.Broadcast(SessionName, false);
 	}
 }
 
 void OnlineSubsystem::OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful)
 {
-	const auto color = bWasSuccessful ? FColor::Green : FColor::Red;
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, color, FString::Printf(TEXT("OnStartSessionComplete %s, %d"), *SessionName.ToString(), bWasSuccessful));
-
 	IOnlineSessionPtr Sessions = GetSession();
 
-	if (!Sessions)
+	if (Sessions)
 	{
-		return;
+		Sessions->ClearOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegateHandle);	
 	}
-		
-	// Clear the delegate, since we are done with this call
-	Sessions->ClearOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegateHandle);
-
-	//Notify Session created and Started
-	m_CreateAndStartSessionComplete.Broadcast(SessionName, bWasSuccessful);
+	if(m_CreateAndStartSessionComplete.IsBound())
+	{
+		m_CreateAndStartSessionComplete.Broadcast(SessionName, bWasSuccessful);
+	}
 }
 
 void OnlineSubsystem::OnFindSessionsComplete(bool bWasSuccessful)
 {
-	const auto color = bWasSuccessful ? FColor::Green : FColor::Red;
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, color, FString::Printf(TEXT("OFindSessionsComplete bSuccess: %d"), bWasSuccessful));
-
-	// Get OnlineSubsystem we want to work with
 	IOnlineSessionPtr Sessions = GetSession();
 
-	if (!Sessions)
+	if (Sessions)
 	{
-		return;
+		Sessions->ClearOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegateHandle);
 	}
-	
-	// Clear the Delegate handle, since we finished this call
-	Sessions->ClearOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegateHandle);
-
-	// Just debugging the Number of Search results. Can be displayed in UMG or something later on
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Num Search Results: %d"), SessionSearch->SearchResults.Num()));
-
-	// If we have found at least 1 session, we just going to debug them. You could add them to a list of UMG Widgets, like it is done in the BP version!
-	if (SessionSearch->SearchResults.Num() > 0)
+	if(m_FindSessionsComplete.IsBound())
 	{
-		// "SessionSearch->SearchResults" is an Array that contains all the information. You can access the Session in this and get a lot of information.
-		// This can be customized later on with your own classes to add more information that can be set and displayed
-		for (int32 SearchIdx = 0; SearchIdx < SessionSearch->SearchResults.Num(); SearchIdx++)
-		{
-			// OwningUserName is just the SessionName for now. I guess you can create your own Host Settings class and GameSession Class and add a proper GameServer Name here.
-			// This is something you can't do in Blueprint for example!
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("Session Number: %d | Sessionname: %s "), SearchIdx, *(SessionSearch->SearchResults[SearchIdx].Session.OwningUserName)));
-		}
+		m_FindSessionsComplete.Broadcast(SessionSearch, bWasSuccessful);
 	}
 }
 
@@ -264,22 +238,16 @@ void OnlineSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCom
 
 void OnlineSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
-	const auto color = bWasSuccessful ? FColor::Green : FColor::Red;
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, color, FString::Printf(TEXT("OnDestroySessionComplete %s, %d"), *SessionName.ToString(), bWasSuccessful));
-
 	IOnlineSessionPtr Sessions = GetSession();
 
-	if (!Sessions)
+	if (Sessions)
 	{
-		return;
+		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegateHandle);
 	}
-	
-	// Clear the Delegate
-	Sessions->ClearOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegateHandle);
 
-	// If it was successful, we just load another level (could be a MainMenu!)
-	if (bWasSuccessful)
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnDestroySessionComplete is Bound ? %d"),m_DestroySessionComplete.IsBound());
+	if(m_DestroySessionComplete.IsBound())
 	{
-		UGameplayStatics::OpenLevel(m_World, "ThirdPersonExampleMap", true);
+		m_DestroySessionComplete.Broadcast(SessionName, bWasSuccessful);
 	}
 }
