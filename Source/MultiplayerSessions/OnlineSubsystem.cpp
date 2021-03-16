@@ -4,41 +4,19 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
 
-OnlineSubsystem::OnlineSubsystem(UWorld* world, FName lobbyMap) :
-m_World{world},
-m_LobbyMap{lobbyMap}
+OnlineSubsystem::OnlineSubsystem(UWorld* world) :
+m_World{world}
 {
 	check(world);
 	
-	OnCreateSessionCompleteDelegate = FOnCreateSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnCreateSessionComplete);
+	OnCreateSessionCompleteInternalDelegate = FOnCreateSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnCreateSessionComplete);
 	OnStartSessionCompleteDelegate = FOnStartSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnStartOnlineGameComplete);
 	OnFindSessionsCompleteDelegate = FOnFindSessionsCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnFindSessionsComplete);
 	OnJoinSessionCompleteDelegate = FOnJoinSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnJoinSessionComplete);
 	OnDestroySessionCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnDestroySessionComplete);
 }
 
-IOnlineSessionPtr OnlineSubsystem::GetSession() const
-{
-	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
-
-	if (!OnlineSub)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("No OnlineSubsytem found!"));
-		return nullptr;
-	}
-	
-	// Get the Session Interface, so we can call the "CreateSession" function on it
-	IOnlineSessionPtr sessions = OnlineSub->GetSessionInterface();
-
-	if (sessions.IsValid())
-	{
-		return sessions;
-	}
-	
-	return nullptr;
-}
-
-bool OnlineSubsystem::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
+bool OnlineSubsystem::CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
 {
 	IOnlineSessionPtr Sessions = GetSession();
 
@@ -59,11 +37,11 @@ bool OnlineSubsystem::HostSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
 
-	const FString mapName = m_LobbyMap.ToString();
-	SessionSettings->Set(SETTING_MAPNAME, mapName, EOnlineDataAdvertisementType::ViaOnlineService);
+//	const FString mapName = m_LobbyMap.ToString();
+//	SessionSettings->Set(SETTING_MAPNAME, mapName, EOnlineDataAdvertisementType::ViaOnlineService);
 
 	// Set the delegate to the Handle of the SessionInterface
-	OnCreateSessionCompleteDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
+	OnCreateSessionCompleteInternalDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegate);
 
 	// Our delegate should get called when this is complete (doesn't need to be successful!)
 	return Sessions->CreateSession(*UserId, SessionName, *SessionSettings);
@@ -153,6 +131,27 @@ bool OnlineSubsystem::FillWithSession(ULocalPlayer* player, FOnlineSessionSearch
 	return false;
 }
 
+IOnlineSessionPtr OnlineSubsystem::GetSession() const
+{
+	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
+
+	if (!OnlineSub)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("No OnlineSubsytem found!"));
+		return nullptr;
+	}
+	
+	// Get the Session Interface, so we can call the "CreateSession" function on it
+	IOnlineSessionPtr sessions = OnlineSub->GetSessionInterface();
+
+	if (sessions.IsValid())
+	{
+		return sessions;
+	}
+	
+	return nullptr;
+}
+
 void OnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
 	const auto color = bWasSuccessful ? FColor::Green : FColor::Red;
@@ -166,7 +165,7 @@ void OnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 	}
 		
 	// Clear the SessionComplete delegate handle, since we finished this call
-	Sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegateHandle);
+	Sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegateHandle);
 	if (bWasSuccessful)
 	{
 		// Set the StartSession delegate handle
@@ -192,11 +191,8 @@ void OnlineSubsystem::OnStartOnlineGameComplete(FName SessionName, bool bWasSucc
 	// Clear the delegate, since we are done with this call
 	Sessions->ClearOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteDelegateHandle);
 
-	// If the start was successful, we can open a LobbyMap if we want. Make sure to use "listen" as a parameter!
-	if (bWasSuccessful)
-	{
-		UGameplayStatics::OpenLevel(m_World, m_LobbyMap, true, "listen");
-	}
+	//Notify Session created and Started
+	m_CreateAndStartSessionComplete.Broadcast(SessionName, bWasSuccessful);
 }
 
 void OnlineSubsystem::OnFindSessionsComplete(bool bWasSuccessful)

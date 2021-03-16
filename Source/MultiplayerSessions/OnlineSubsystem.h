@@ -4,14 +4,19 @@
 class OnlineSubsystem
 {
 public:
-	OnlineSubsystem(UWorld* world, FName lobbyMap);
+	OnlineSubsystem(UWorld* world);
 	virtual ~OnlineSubsystem() = default;
 	
-	bool HostSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
+	bool CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
 	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FOnlineSessionSearchResult& SearchResult);
 	void DestroySessionAndLeaveGame(FName SessionName) const;
 	bool FillWithSession(ULocalPlayer* player, FOnlineSessionSearchResult& searchResult) const;
+
+	/** Handles to various registered delegates */
+	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnCreateAndStartSessionComplete, FName /*SessionName*/, bool /*bWasSuccessful*/);
+	FOnCreateAndStartSessionComplete& OnCreateAndStartSessionCompleteDelegate() { return m_CreateAndStartSessionComplete; }
+	
 
 private:
 	IOnlineSessionPtr GetSession() const;
@@ -21,33 +26,28 @@ private:
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
 
-	/* Delegate called when session created */
-	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
-	/* Delegate called when session started */
+	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteInternalDelegate;
 	FOnStartSessionCompleteDelegate OnStartSessionCompleteDelegate;
+	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
+	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;    
+	FOnDestroySessionCompleteDelegate OnDestroySessionCompleteDelegate;
+	
 	/** Handles to registered delegates for creating/starting a session */
-	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
+	FDelegateHandle OnCreateSessionCompleteInternalDelegateHandle;
 	FDelegateHandle OnStartSessionCompleteDelegateHandle;
 	
-	/** Delegate for searching for sessions */
-	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
 	/** Handle to registered delegate for searching a session */
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
 
-	/** Delegate for joining a session */
-	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;    
 	/** Handle to registered delegate for joining a session */
 	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 
-	/** Delegate for destroying a session */
-	FOnDestroySessionCompleteDelegate OnDestroySessionCompleteDelegate;
 	/** Handle to registered delegate for destroying a session */
 	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
 
-private:	
+	FOnCreateAndStartSessionComplete m_CreateAndStartSessionComplete;	
 	TSharedPtr<class FOnlineSessionSettings> SessionSettings;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 
 	UWorld* m_World;
-	FName m_LobbyMap;
 };
