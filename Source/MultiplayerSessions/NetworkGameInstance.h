@@ -21,19 +21,26 @@ class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance, publi
 public:
 	
 	UNetworkGameInstance(const FObjectInitializer& ObjectInitializer);
-	void InitializeOnlineSubsystem();
+	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType,
+	                          const FString& ErrorString);
+	
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+	void CreateSession() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+	void FindSessions() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+	void JoinSession() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+	void DestroySessionAndLeaveGame() override;
+
+	void OnCreateAndStartSessionCompleteEvent_Implementation() override;
+private:
 	void StartGameInstance() override;
 	FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* localPlayer, const FGameInstancePIEParameters& params) override;
 
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void StartOnlineGame() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void FindOnlineGames() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void JoinOnlineGame() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void DestroySessionAndLeaveGame() override;	
+	void InitializeOnlineSubsystem();
+	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful);
 
-private:
+	
 	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
 };

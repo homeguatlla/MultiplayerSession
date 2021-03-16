@@ -17,8 +17,10 @@ class MULTIPLAYERSESSIONS_API IIOnlineGameSession
 	GENERATED_BODY()
 	
 public:
-    virtual void StartOnlineGame() = 0;
-	virtual void FindOnlineGames() = 0;
-	virtual void JoinOnlineGame() = 0;
+    virtual void CreateSession() = 0;
+	virtual void FindSessions() = 0;
+	virtual void JoinSession() = 0;
 	virtual void DestroySessionAndLeaveGame() = 0;
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "GameSession")
+    void OnCreateAndStartSessionCompleteEvent();
 };

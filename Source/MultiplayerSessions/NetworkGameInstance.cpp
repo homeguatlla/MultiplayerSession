@@ -3,6 +3,7 @@
 
 #include "NetworkGameInstance.h"
 #include "OnlineSessionSettings.h"
+#include "Kismet/GameplayStatics.h"
 
 
 const FName LobbyMap("LobbyMap");
@@ -12,10 +13,15 @@ Super(ObjectInitializer)
 {
 }
 
+void UNetworkGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver *NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString = TEXT(""))
+{
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("HandleNetworkFailure: %s"), *ErrorString));
+}
+
 void UNetworkGameInstance::InitializeOnlineSubsystem()
 {
-	auto world = GetWorld();
-	m_OnlineSubsystem = MakeShareable(new OnlineSubsystem(world, LobbyMap));
+	m_OnlineSubsystem = MakeShareable(new OnlineSubsystem(GetWorld()));
+	m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnCreateAndStartSessionComplete);
 }
 
 void UNetworkGameInstance::StartGameInstance()
@@ -23,33 +29,34 @@ void UNetworkGameInstance::StartGameInstance()
 	Super::StartGameInstance();
 	
 	InitializeOnlineSubsystem();
+	//GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 }
 
 FGameInstancePIEResult UNetworkGameInstance::StartPlayInEditorGameInstance(ULocalPlayer* localPlayer,
                                                                            const FGameInstancePIEParameters& params)
 {
 	InitializeOnlineSubsystem();
-
+	//GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 	return Super::StartPlayInEditorGameInstance(localPlayer, params);
 }
 
-void UNetworkGameInstance::StartOnlineGame()
+void UNetworkGameInstance::CreateSession()
 {
 	// Creating a local player where we can get the UserID from
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 	
 	// Call our custom HostSession function. GameSessionName is a GameInstance variable	
-	m_OnlineSubsystem->HostSession(Player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, true, true, 4);
+	m_OnlineSubsystem->CreateAndStartSession(Player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, true, true, 4);
 }
 
-void UNetworkGameInstance::FindOnlineGames()
+void UNetworkGameInstance::FindSessions()
 {
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 
 	m_OnlineSubsystem->FindSessions(Player->GetPreferredUniqueNetId().GetUniqueNetId(), true, true);
 }
 
-void UNetworkGameInstance::JoinOnlineGame()
+void UNetworkGameInstance::JoinSession()
 {
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 
@@ -67,4 +74,18 @@ void UNetworkGameInstance::DestroySessionAndLeaveGame()
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Destroying Session: %s"), *sessionName));
 		
 	m_OnlineSubsystem->DestroySessionAndLeaveGame(GameSessionName);
+}
+
+void UNetworkGameInstance::OnCreateAndStartSessionCompleteEvent_Implementation()
+{
+}
+
+void UNetworkGameInstance::OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		Execute_OnCreateAndStartSessionCompleteEvent(this);
+		//Execute_OnCreateAndStartSessionCompleteEvent(this);
+		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
+	}
 }
