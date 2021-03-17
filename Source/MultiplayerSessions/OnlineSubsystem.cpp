@@ -1,7 +1,6 @@
 ﻿#include "OnlineSubsystem.h"
 #include "Public/OnlineSubsystem.h"
 
-#include "AutomatedAssetImportData.h"
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -119,6 +118,12 @@ void OnlineSubsystem::DestroySession(FName SessionName)
 	
 	OnDestroySessionCompleteDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteInternalDelegate);
 	Sessions->DestroySession(SessionName);
+}
+
+FString OnlineSubsystem::GetSubsystemName() const
+{
+	IOnlineSubsystem* const OnlineSub = IOnlineSubsystem::Get();
+	return OnlineSub->GetSubsystemName().ToString();
 }
 
 IOnlineSessionPtr OnlineSubsystem::GetSession() const

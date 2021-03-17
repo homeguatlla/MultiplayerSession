@@ -9,6 +9,15 @@ public class MultiplayerSessionsTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
+		
+		// enable logs and debugging for Shipping builds
+		if (Configuration == UnrealTargetConfiguration.Shipping)
+		{
+			BuildEnvironment = TargetBuildEnvironment.Unique;
+			bUseChecksInShipping = true;
+			bUseLoggingInShipping = true;
+		}
+		
 		ExtraModuleNames.Add("MultiplayerSessions");
 	}
 }

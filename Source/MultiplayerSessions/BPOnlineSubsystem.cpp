@@ -66,9 +66,18 @@ void ABPOnlineSubsystem::BeginDestroy()
 	if(!IsTemplate(RF_Transient))
 	{
 		UE_LOG(LogNet, Display, TEXT("ABPOnlineSubsystem::BeginDestroy"));
-		m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().Remove(OnCreateSessionCompleteInternalDelegateHandle);
-		m_OnlineSubsystem->OnDestroySessionCompleteDelegate().Remove(OnDestroySessionCompleteInternalDelegateHandle);
-		m_OnlineSubsystem->OnFindSessionsCompleteDelegate().Remove(OnFindSessionsCompleteInternalDelegateHandle);
+		if(OnCreateSessionCompleteInternalDelegateHandle.IsValid())
+		{
+			m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().Remove(OnCreateSessionCompleteInternalDelegateHandle);
+		}
+		if(OnDestroySessionCompleteInternalDelegateHandle.IsValid())
+		{
+			m_OnlineSubsystem->OnDestroySessionCompleteDelegate().Remove(OnDestroySessionCompleteInternalDelegateHandle);
+		}
+		if(OnFindSessionsCompleteInternalDelegateHandle.IsValid())
+		{
+			m_OnlineSubsystem->OnFindSessionsCompleteDelegate().Remove(OnFindSessionsCompleteInternalDelegateHandle);
+		}
 	}
 }
 

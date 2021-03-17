@@ -11,6 +11,7 @@ public:
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
 	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName,  const FString& SessionId);
 	void DestroySession(FName SessionName);
+	FString GetSubsystemName() const;
 
 	/** Handles to various registered delegates */
 	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnCreateAndStartSessionComplete, FName /*SessionName*/, bool /*bWasSuccessful*/);

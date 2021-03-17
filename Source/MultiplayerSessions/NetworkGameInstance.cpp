@@ -36,6 +36,7 @@ void UNetworkGameInstance::StartGameInstance()
 	GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 }
 
+#if WITH_EDITOR
 FGameInstancePIEResult UNetworkGameInstance::StartPlayInEditorGameInstance(ULocalPlayer* localPlayer,
                                                                            const FGameInstancePIEParameters& params)
 {
@@ -43,14 +44,25 @@ FGameInstancePIEResult UNetworkGameInstance::StartPlayInEditorGameInstance(ULoca
 	GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
 	return Super::StartPlayInEditorGameInstance(localPlayer, params);
 }
+#endif
 
 void UNetworkGameInstance::CreateSession()
 {
 	// Creating a local player where we can get the UserID from
 	ULocalPlayer* const Player = GetFirstGamePlayer();
+	const bool isLAN = m_OnlineSubsystem->GetSubsystemName() == "NULL";
+	const bool isPresence = true;
+	const int maxNumPlayers = 4;
 	
-	// Call our custom HostSession function. GameSessionName is a GameInstance variable	
-	m_OnlineSubsystem->CreateAndStartSession(Player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, true, true, 4);
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::CreateSession is LAN? %d"), isLAN ));
+	UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::CreateSession is LAN? %d"), isLAN );
+
+	m_OnlineSubsystem->CreateAndStartSession(
+		Player->GetPreferredUniqueNetId().GetUniqueNetId(),
+		GameSessionName,
+		isLAN,
+		isPresence,
+		maxNumPlayers);
 }
 
 void UNetworkGameInstance::FindSessions()
@@ -58,7 +70,10 @@ void UNetworkGameInstance::FindSessions()
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 
 	m_SessionIdToFound.Empty();
-	m_OnlineSubsystem->FindSessions(Player->GetPreferredUniqueNetId().GetUniqueNetId(), true, true);
+	
+	const bool isLAN = m_OnlineSubsystem->GetSubsystemName() == "NULL";
+	const bool isPresence = true;
+	m_OnlineSubsystem->FindSessions(Player->GetPreferredUniqueNetId().GetUniqueNetId(), isLAN, isPresence);
 }
 
 void UNetworkGameInstance::JoinSession()
@@ -75,28 +90,50 @@ void UNetworkGameInstance::JoinSession()
 void UNetworkGameInstance::DestroySessionAndLeaveGame()
 {
 	const FString sessionName(LexToString(GameSessionName));
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Destroying Session: %s"), *sessionName));
 		
 	m_OnlineSubsystem->DestroySession(GameSessionName);
 }
 
+void UNetworkGameInstance::Shutdown()
+{
+	if(OnCreateSessionCompleteDelegateHandle.IsValid())
+	{
+		m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().Remove(OnCreateSessionCompleteDelegateHandle);
+	}
+	if(OnDestroySessionCompleteDelegateHandle.IsValid())
+	{
+		m_OnlineSubsystem->OnDestroySessionCompleteDelegate().Remove(OnDestroySessionCompleteDelegateHandle);
+	}
+	if(OnFindSessionsCompleteDelegateHandle.IsValid())
+	{
+		m_OnlineSubsystem->OnFindSessionsCompleteDelegate().Remove(OnFindSessionsCompleteDelegateHandle);
+	}
+	if(OnJoinSessionCompleteDelegateHandle.IsValid())
+	{
+		m_OnlineSubsystem->OnJoinSessionCompleteDelegate().Remove(OnJoinSessionCompleteDelegateHandle);
+	}
+}
+
 void UNetworkGameInstance::OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const
 {
-	m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().Remove(OnCreateSessionCompleteDelegateHandle);
-	
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnCreateAndStartSessionComplete")));
+		
 	if (bWasSuccessful)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnCreateAndStartSessionComplete Session: %s"), *SessionName.ToString()));
+	
 		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::OnCreateAndStartSessionComplete not successful")));
 		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnCreateAndStartSessionComplete not successful"));
 	}
 }
 
 void UNetworkGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const
 {
-	m_OnlineSubsystem->OnDestroySessionCompleteDelegate().Remove(OnDestroySessionCompleteDelegateHandle);
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnDestroySessionComplete")));
 	
 	if (bWasSuccessful)
 	{
@@ -104,35 +141,47 @@ void UNetworkGameInstance::OnDestroySessionComplete(FName SessionName, bool bWas
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::OnDestroySessionComplete not successful")));
 		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnDestroySessionComplete not successful"));
 	}
 }
 
 void UNetworkGameInstance::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful)
 {
-	m_OnlineSubsystem->OnFindSessionsCompleteDelegate().Remove(OnFindSessionsCompleteDelegateHandle);
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnFindSessionsComplete")));
 	
 	if(bWasSuccessful)
 	{
 		for(auto&& session : Sessions->SearchResults)
 		{
 			UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete session id = %s"), *session.GetSessionIdStr());
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnFindSessionsComplete session: %s"), *session.GetSessionIdStr()));
 		}
-		m_SessionIdToFound = Sessions->SearchResults[0].GetSessionIdStr();
+		if(Sessions->SearchResults.Num() > 0)
+		{
+			m_SessionIdToFound = Sessions->SearchResults[0].GetSessionIdStr();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete No sessions found"));			
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnFindSessionsComplete No sessions found")));
+		}
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::OnFindSessionsComplete Not successful")));
 		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnFindSessionsComplete not successful"));
 	}
 }
 
 void UNetworkGameInstance::OnJoinSessionComplete(const FString& travelURL, bool bWasSuccessful)
 {
-	m_OnlineSubsystem->OnJoinSessionCompleteDelegate().Remove(OnJoinSessionCompleteDelegateHandle);
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnJoinSessionComplete")));
 	//ULocalPlayer* const Player = GetFirstGamePlayer();
 	if(bWasSuccessful)
 	{
 		UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnJoinSessionComplete travel to = %s"), *travelURL);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("UNetworkGameInstance::OnJoinSessionComplete travel to = %s"), *travelURL));
 		auto playerController = GetFirstLocalPlayerController();
 		if(playerController)
 		{
@@ -140,11 +189,13 @@ void UNetworkGameInstance::OnJoinSessionComplete(const FString& travelURL, bool 
 		}
 		else
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::OnJoinSessionComplete playercontroller null")));
 			UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnJoinSessionComplete playercontroller null"));
 		}
 	}
 	else
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("UNetworkGameInstance::OnJoinSessionComplete not successful")));
 		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnJoinSessionComplete not successful"));
 	}
 }

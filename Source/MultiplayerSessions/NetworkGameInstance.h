@@ -32,11 +32,14 @@ public:
 	void JoinSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
-
+	
+	void Shutdown() override;
+	
 private:
 	void StartGameInstance() override;
+#if WITH_EDITOR
 	FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* localPlayer, const FGameInstancePIEParameters& params) override;
-
+#endif
 	void InitializeOnlineSubsystem();
 	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const;
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const;
