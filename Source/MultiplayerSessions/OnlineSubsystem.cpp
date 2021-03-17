@@ -10,6 +10,7 @@ OnlineSubsystem::OnlineSubsystem(UWorld* world) :
 m_World{world}
 {
 	check(world);
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnlineSubsystem"));
 	
 	OnCreateSessionCompleteInternalDelegate = FOnCreateSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnCreateSessionComplete);
 	OnStartSessionCompleteInternalDelegate = FOnStartSessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnStartOnlineGameComplete);
@@ -18,8 +19,20 @@ m_World{world}
 	OnDestroySessionCompleteInternalDelegate = FOnDestroySessionCompleteDelegate::CreateRaw(this, &OnlineSubsystem::OnDestroySessionComplete);
 }
 
+OnlineSubsystem::~OnlineSubsystem()
+{
+	OnCreateSessionCompleteInternalDelegate.Unbind();
+	OnStartSessionCompleteInternalDelegate.Unbind();
+	OnFindSessionsCompleteInternalDelegate.Unbind();
+	OnJoinSessionCompleteInternalDelegate.Unbind();
+	OnDestroySessionCompleteInternalDelegate.Unbind();
+	
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::~OnlineSubsystem"));
+}
+
 bool OnlineSubsystem::CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::CreateAndStartSession"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (!Sessions || !UserId.IsValid())
@@ -39,18 +52,17 @@ bool OnlineSubsystem::CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserI
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
 
-//	const FString mapName = m_LobbyMap.ToString();
-//	SessionSettings->Set(SETTING_MAPNAME, mapName, EOnlineDataAdvertisementType::ViaOnlineService);
+	//const FString mapName = "LobbyMap";//m_LobbyMap.ToString();
+	//SessionSettings->Set(SETTING_MAPNAME, mapName, EOnlineDataAdvertisementType::ViaOnlineService);
 
-	// Set the delegate to the Handle of the SessionInterface
 	OnCreateSessionCompleteInternalDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegate);
 
-	// Our delegate should get called when this is complete (doesn't need to be successful!)
 	return Sessions->CreateSession(*UserId, SessionName, *SessionSettings);
 }
 
 void OnlineSubsystem::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::FindSessions"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (!Sessions || !UserId.IsValid())
@@ -58,33 +70,25 @@ void OnlineSubsystem::FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool b
 		OnFindSessionsComplete(false);
 		return;
 	}
-		
-	/*
-	Fill in all the SearchSettings, like if we are searching for a LAN game and how many results we want to have!
-	*/
+	
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
-
 	SessionSearch->bIsLanQuery = bIsLAN;
 	SessionSearch->MaxSearchResults = 20;
 	SessionSearch->PingBucketSize = 50;
 	
-	// We only want to set this Query Setting if "bIsPresence" is true
 	if (bIsPresence)
 	{
 		SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, bIsPresence, EOnlineComparisonOp::Equals);
 	}
 
 	TSharedRef<FOnlineSessionSearch> SearchSettingsRef = SessionSearch.ToSharedRef();
-
-	// Set the Delegate to the Delegate Handle of the FindSession function
 	OnFindSessionsCompleteDelegateHandle = Sessions->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteInternalDelegate);
-	
-	// Finally call the SessionInterface function. The Delegate gets called once this is finished
 	Sessions->FindSessions(*UserId, SearchSettingsRef);
 }
 
 bool OnlineSubsystem::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, const FString& SessionId)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::JoinSession"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (!Sessions || !UserId.IsValid())
@@ -92,7 +96,6 @@ bool OnlineSubsystem::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 		return false;
 	}
 
-	// Set the Handle again
 	OnJoinSessionCompleteDelegateHandle = Sessions->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteInternalDelegate);
 
 	FOnlineSessionSearchResult searchResult;
@@ -104,8 +107,9 @@ bool OnlineSubsystem::JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName S
 	return false;
 }
 
-void OnlineSubsystem::DestroySession(FName SessionName) const
+void OnlineSubsystem::DestroySession(FName SessionName)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::DestroySession"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (!Sessions)
@@ -113,7 +117,7 @@ void OnlineSubsystem::DestroySession(FName SessionName) const
 		return;
 	}
 	
-	Sessions->AddOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteInternalDelegate);
+	OnDestroySessionCompleteDelegateHandle = Sessions->AddOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteInternalDelegate);
 	Sessions->DestroySession(SessionName);
 }
 
@@ -123,6 +127,7 @@ IOnlineSessionPtr OnlineSubsystem::GetSession() const
 
 	if (!OnlineSub)
 	{
+		UE_LOG(LogNet, Error, TEXT("OnlineSubsystem::GetSession No OnlineSubsystem found!"));
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("No OnlineSubsytem found!"));
 		return nullptr;
 	}
@@ -133,7 +138,7 @@ IOnlineSessionPtr OnlineSubsystem::GetSession() const
 	{
 		return sessions;
 	}
-	
+	UE_LOG(LogNet, Error, TEXT("OnlineSubsystem::GetSession Return NULLPTR"));
 	return nullptr;
 }
 
@@ -155,6 +160,7 @@ bool OnlineSubsystem::FillWithSessionBySessionId(const FString& sessionId, FOnli
 
 void OnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnCreateSessionComplete"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (Sessions)
@@ -176,6 +182,7 @@ void OnlineSubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSucces
 
 void OnlineSubsystem::OnStartOnlineGameComplete(FName SessionName, bool bWasSuccessful)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnStartOnlineGameComplete"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (Sessions)
@@ -190,6 +197,7 @@ void OnlineSubsystem::OnStartOnlineGameComplete(FName SessionName, bool bWasSucc
 
 void OnlineSubsystem::OnFindSessionsComplete(bool bWasSuccessful)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnFindSessionsComplete"));
 	IOnlineSessionPtr Sessions = GetSession();
 
 	if (Sessions)
@@ -204,48 +212,36 @@ void OnlineSubsystem::OnFindSessionsComplete(bool bWasSuccessful)
 
 void OnlineSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("OnJoinSessionComplete %s, %d"), *SessionName.ToString(), static_cast<int32>(Result)));
-
-	// Get the OnlineSubsystem we want to work with
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnJoinSessionComplete"));
+	FString travelURL;
+	bool bWasSuccessful = false;
+	
 	IOnlineSessionPtr Sessions = GetSession();
-
-	if (!Sessions)
+	if (Sessions)
 	{
-		return;
+		Sessions->ClearOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegateHandle);
+
+		if(m_JoinSessionComplete.IsBound())
+		{
+			Sessions->GetResolvedConnectString(SessionName, travelURL);
+			bWasSuccessful = true;
+		}
 	}
-		
-	// Clear the Delegate again
-	Sessions->ClearOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegateHandle);
 
-	// Get the first local PlayerController, so we can call "ClientTravel" to get to the Server Map
-	// This is something the Blueprint Node "Join Session" does automatically!
-	APlayerController * const PlayerController = m_World->GetGameInstance()->GetFirstLocalPlayerController();
-
-	// We need a FString to use ClientTravel and we can let the SessionInterface contruct such a
-	// String for us by giving him the SessionName and an empty String. We want to do this, because
-	// Every OnlineSubsystem uses different TravelURLs
-	FString TravelURL;
-
-	if (PlayerController && Sessions->GetResolvedConnectString(SessionName, TravelURL))
+	if(m_JoinSessionComplete.IsBound())
 	{
-		// Finally call the ClienTravel. If you want, you could print the TravelURL to see
-		// how it really looks like
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Blue, FString::Printf(TEXT("OnJoinSessionComplete Travelling to %s"), *TravelURL));
-
-		PlayerController->ClientTravel(TravelURL, ETravelType::TRAVEL_Absolute);
+		m_JoinSessionComplete.Broadcast(travelURL, bWasSuccessful);
 	}
 }
 
 void OnlineSubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnDestroySessionComplete"));
 	IOnlineSessionPtr Sessions = GetSession();
-
 	if (Sessions)
 	{
 		Sessions->ClearOnDestroySessionCompleteDelegate_Handle(OnDestroySessionCompleteDelegateHandle);
 	}
-
-	UE_LOG(LogNet, Display, TEXT("OnlineSubsystem::OnDestroySessionComplete is Bound ? %d"),m_DestroySessionComplete.IsBound());
 	if(m_DestroySessionComplete.IsBound())
 	{
 		m_DestroySessionComplete.Broadcast(SessionName, bWasSuccessful);

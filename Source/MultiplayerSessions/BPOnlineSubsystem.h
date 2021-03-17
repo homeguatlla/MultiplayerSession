@@ -16,6 +16,7 @@ class MULTIPLAYERSESSIONS_API ABPOnlineSubsystem : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ABPOnlineSubsystem();
+	~ABPOnlineSubsystem();
 
 	UFUNCTION(BlueprintCallable, Category="BP GameSession")
     void CreateSession();
@@ -34,9 +35,9 @@ public:
     void OnFindSessionsCompleted(const TArray<FString>& sessions);
     
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	
+	void BeginPlay() override;
+	void BeginDestroy() override;
+
 private:
 	void OnCreateAndStartSessionInternalCompleted(FName SessionName, bool bWasSuccessful);	
 	void OnDestroySessionInternalCompleted(FName SessionName, bool bWasSuccessful);

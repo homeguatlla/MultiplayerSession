@@ -16,6 +16,7 @@ Super(ObjectInitializer)
 void UNetworkGameInstance::HandleNetworkFailure(UWorld * World, UNetDriver *NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString = TEXT(""))
 {
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("HandleNetworkFailure: %s"), *ErrorString));
+	UE_LOG(LogTemp, Error, TEXT("UNetworkGameInstance::HandleNetworkFailure error: %s"), *ErrorString);
 }
 
 void UNetworkGameInstance::InitializeOnlineSubsystem()
@@ -24,6 +25,7 @@ void UNetworkGameInstance::InitializeOnlineSubsystem()
 	OnCreateSessionCompleteDelegateHandle = m_OnlineSubsystem->OnCreateAndStartSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnCreateAndStartSessionComplete);
 	OnDestroySessionCompleteDelegateHandle = m_OnlineSubsystem->OnDestroySessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnDestroySessionComplete);
 	OnFindSessionsCompleteDelegateHandle = m_OnlineSubsystem->OnFindSessionsCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnFindSessionsComplete);
+	OnJoinSessionCompleteDelegateHandle = m_OnlineSubsystem->OnJoinSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnJoinSessionComplete);
 }
 
 void UNetworkGameInstance::StartGameInstance()
@@ -86,6 +88,10 @@ void UNetworkGameInstance::OnCreateAndStartSessionComplete(FName SessionName, bo
 	{
 		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnCreateAndStartSessionComplete not successful"));
+	}
 }
 
 void UNetworkGameInstance::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const
@@ -96,6 +102,10 @@ void UNetworkGameInstance::OnDestroySessionComplete(FName SessionName, bool bWas
 	{
 		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonExampleMap", true);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnDestroySessionComplete not successful"));
+	}
 }
 
 void UNetworkGameInstance::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful)
@@ -104,6 +114,37 @@ void UNetworkGameInstance::OnFindSessionsComplete(TSharedPtr<class FOnlineSessio
 	
 	if(bWasSuccessful)
 	{
+		for(auto&& session : Sessions->SearchResults)
+		{
+			UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete session id = %s"), *session.GetSessionIdStr());
+		}
 		m_SessionIdToFound = Sessions->SearchResults[0].GetSessionIdStr();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnFindSessionsComplete not successful"));
+	}
+}
+
+void UNetworkGameInstance::OnJoinSessionComplete(const FString& travelURL, bool bWasSuccessful)
+{
+	m_OnlineSubsystem->OnJoinSessionCompleteDelegate().Remove(OnJoinSessionCompleteDelegateHandle);
+	//ULocalPlayer* const Player = GetFirstGamePlayer();
+	if(bWasSuccessful)
+	{
+		UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnJoinSessionComplete travel to = %s"), *travelURL);
+		auto playerController = GetFirstLocalPlayerController();
+		if(playerController)
+		{
+			playerController->ClientTravel(travelURL, ETravelType::TRAVEL_Absolute);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnJoinSessionComplete playercontroller null"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::OnJoinSessionComplete not successful"));
 	}
 }

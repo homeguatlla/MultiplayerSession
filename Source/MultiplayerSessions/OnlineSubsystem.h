@@ -5,12 +5,12 @@ class OnlineSubsystem
 {
 public:
 	OnlineSubsystem(UWorld* world);
-	virtual ~OnlineSubsystem() = default;
+	virtual ~OnlineSubsystem();
 	
 	bool CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
 	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName,  const FString& SessionId);
-	void DestroySession(FName SessionName) const;
+	void DestroySession(FName SessionName);
 
 	/** Handles to various registered delegates */
 	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnCreateAndStartSessionComplete, FName /*SessionName*/, bool /*bWasSuccessful*/);
@@ -19,6 +19,8 @@ public:
 	FOnDestroySessionComplete& OnDestroySessionCompleteDelegate() { return m_DestroySessionComplete; }
 	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnFindSessionsComplete, TSharedPtr<class FOnlineSessionSearch>, bool /*bWasSuccessful*/);
 	FOnFindSessionsComplete& OnFindSessionsCompleteDelegate() { return m_FindSessionsComplete; }
+	DECLARE_EVENT_TwoParams(OnlineSubsystem, FOnJoinSessionComplete, const FString& travelURL, bool /*bWasSuccessful*/);
+	FOnJoinSessionComplete& OnJoinSessionCompleteDelegate() { return m_JoinSessionComplete; }
 
 private:
 	IOnlineSessionPtr GetSession() const;
@@ -51,6 +53,7 @@ private:
 	FOnCreateAndStartSessionComplete m_CreateAndStartSessionComplete;
 	FOnDestroySessionComplete m_DestroySessionComplete;
 	FOnFindSessionsComplete m_FindSessionsComplete;
+	FOnJoinSessionComplete m_JoinSessionComplete;
 	
 	TSharedPtr<class FOnlineSessionSettings> SessionSettings;
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;

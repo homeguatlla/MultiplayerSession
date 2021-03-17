@@ -16,7 +16,10 @@ public class MultiplayerSessions : ModuleRules
 			"HeadMountedDisplay", 
 			//Online Platform connectivity specific
 			"OnlineSubsystem", 
-			"OnlineSubsystemUtils" });
+			"OnlineSubsystemUtils",
+			//Steam
+			"OnlineSubsystemSteam"
+		});
 		
 		//Online Platform connectivity specific
 		DynamicallyLoadedModuleNames.Add("OnlineSubsystemNull");

@@ -41,10 +41,12 @@ private:
 	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const;
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const;
 	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful);
-
+	void OnJoinSessionComplete(const FString& travelURL, bool bWasSuccessful);
+	
 	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
 	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
+	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 	
 	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
 	FString m_SessionIdToFound;
