@@ -32,15 +32,18 @@ public:
 	void JoinSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
-	
+	void UnregisterOnlineSubsystemDelegates();
+
 	void Shutdown() override;
-	
+	void Init() override;
+		
 private:
-	void StartGameInstance() override;
+	/*void StartGameInstance() override;
 #if WITH_EDITOR
 	FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* localPlayer, const FGameInstancePIEParameters& params) override;
-#endif
+#endif*/
 	void InitializeOnlineSubsystem();
+	bool IsLAN() const;
 	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const;
 	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const;
 	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful);
@@ -53,4 +56,5 @@ private:
 	
 	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
 	FString m_SessionIdToFound;
+	bool m_IsLAN;
 };

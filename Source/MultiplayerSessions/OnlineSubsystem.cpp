@@ -51,9 +51,6 @@ bool OnlineSubsystem::CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserI
 	SessionSettings->bAllowJoinViaPresence = true;
 	SessionSettings->bAllowJoinViaPresenceFriendsOnly = false;
 
-	//const FString mapName = "LobbyMap";//m_LobbyMap.ToString();
-	//SessionSettings->Set(SETTING_MAPNAME, mapName, EOnlineDataAdvertisementType::ViaOnlineService);
-
 	OnCreateSessionCompleteInternalDelegateHandle = Sessions->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegate);
 
 	return Sessions->CreateSession(*UserId, SessionName, *SessionSettings);

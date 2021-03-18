@@ -6,7 +6,10 @@ class OnlineSubsystem
 public:
 	OnlineSubsystem(UWorld* world);
 	virtual ~OnlineSubsystem();
-	
+
+	/*
+	 * bIsPresence: Setting the way that a user's online status will appear to other users, such as "Online", "Away", "Playing a game", and so on.
+	 */
 	bool CreateAndStartSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName, bool bIsLAN, bool bIsPresence, int32 MaxNumPlayers);
 	void FindSessions(TSharedPtr<const FUniqueNetId> UserId, bool bIsLAN, bool bIsPresence);
 	bool JoinSession(TSharedPtr<const FUniqueNetId> UserId, FName SessionName,  const FString& SessionId);
