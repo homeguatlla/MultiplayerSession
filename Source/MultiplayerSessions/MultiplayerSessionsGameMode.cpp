@@ -6,6 +6,8 @@
 
 AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 {
+	//https://docs.unrealengine.com/en-US/InteractiveExperiences/Networking/Travelling/index.html
+	//bUseSeamlessTravel = true;
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdPersonCPP/Blueprints/ThirdPersonCharacter"));
 	if (PlayerPawnBPClass.Class != NULL)

@@ -20,20 +20,24 @@ class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance, publi
 
 public:
 	
-	UNetworkGameInstance(const FObjectInitializer& ObjectInitializer);
-	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType,
-	                          const FString& ErrorString);
+	UNetworkGameInstance(const FObjectInitializer& objectInitializer);
+	void HandleNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failureType,
+	                          const FString& errorString) const;
 	
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void CreateSession() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+    void StartSession() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+	void EndSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void FindSessions() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void JoinSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
-	void UnregisterOnlineSubsystemDelegates();
-
+	
+	void UnregisterOnlineSubsystemDelegates() const;
 	void Shutdown() override;
 	void Init() override;
 		
@@ -44,13 +48,18 @@ private:
 #endif*/
 	void InitializeOnlineSubsystem();
 	bool IsLAN() const;
-	void OnCreateAndStartSessionComplete(FName SessionName, bool bWasSuccessful) const;
-	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful) const;
-	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> Sessions, bool bWasSuccessful);
-	void OnJoinSessionComplete(const FString& travelURL, bool bWasSuccessful);
-	
+	void OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const;
+	void OnDestroySessionComplete(FName sessionName, bool wasSuccessful) const;
+	void OnStartSessionComplete(FName sessionName, bool wasSuccessful) const;
+	void OnEndSessionComplete(FName sessionName, bool wasSuccessful) const;
+	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> sessions, bool wasSuccessful);
+	void OnJoinSessionComplete(const FString& travelURL, EOnJoinSessionCompleteResult::Type result);
+	FString JoinSessionCompleteResultTypeToFString(EOnJoinSessionCompleteResult::Type type) const;
+
 	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
 	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
+	FDelegateHandle OnStartSessionCompleteDelegateHandle;
+	FDelegateHandle OnEndSessionCompleteDelegateHandle;
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
 	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 	
