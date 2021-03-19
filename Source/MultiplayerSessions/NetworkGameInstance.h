@@ -21,8 +21,6 @@ class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance, publi
 public:
 	
 	UNetworkGameInstance(const FObjectInitializer& objectInitializer);
-	void HandleNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failureType,
-	                          const FString& errorString) const;
 	
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void CreateSession() override;
@@ -48,12 +46,17 @@ private:
 #endif*/
 	void InitializeOnlineSubsystem();
 	bool IsLAN() const;
+	void HandleNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failureType,
+                              const FString& errorString) const;
+	void TravelFailure(UWorld* world, ETravelFailure::Type failureType, const FString& errorString);
+
 	void OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnDestroySessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnStartSessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnEndSessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> sessions, bool wasSuccessful);
 	void OnJoinSessionComplete(const FString& travelURL, EOnJoinSessionCompleteResult::Type result);
+
 	FString JoinSessionCompleteResultTypeToFString(EOnJoinSessionCompleteResult::Type type) const;
 
 	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
@@ -66,4 +69,6 @@ private:
 	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
 	FString m_SessionIdToFound;
 	bool m_IsLAN;
+	FDelegateHandle m_NetworkFailureDelegateHandle;
+	FDelegateHandle m_TravelFailureDelegateHandle;
 };

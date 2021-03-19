@@ -24,6 +24,11 @@ void UNetworkGameInstance::HandleNetworkFailure(UWorld * world, UNetDriver *netD
 	UE_LOG(LogTemp, Error, TEXT("UNetworkGameInstance::HandleNetworkFailure error: %s"), *errorString);
 }
 
+void UNetworkGameInstance::TravelFailure(UWorld* world, ETravelFailure::Type failureType, const FString& errorString)
+{
+	UE_LOG(LogLoad, Fatal, TEXT("UNetworkGameInstance::TravelFailure  %s"), *errorString);
+}
+
 void UNetworkGameInstance::Init()
 {
 	Super::Init();
@@ -31,7 +36,17 @@ void UNetworkGameInstance::Init()
 	m_IsLAN = FParse::Param(FCommandLine::Get(), TEXT("LAN"));
 	
 	InitializeOnlineSubsystem();
-	GetEngine()->OnNetworkFailure().AddUObject(this, &UNetworkGameInstance::HandleNetworkFailure);
+	if (GEngine->OnTravelFailure().IsBoundToObject(this) == false)
+	{
+		m_NetworkFailureDelegateHandle = GetEngine()->OnNetworkFailure().AddUObject(
+			this, &UNetworkGameInstance::HandleNetworkFailure);
+	}
+	
+	if (GEngine->OnTravelFailure().IsBoundToObject(this) == false)
+	{
+		m_TravelFailureDelegateHandle = GEngine->OnTravelFailure().AddUObject(
+            this, &UNetworkGameInstance::TravelFailure);
+	}
 }
 
 void UNetworkGameInstance::Shutdown()
@@ -39,6 +54,16 @@ void UNetworkGameInstance::Shutdown()
 	Super::Shutdown();
 	
 	UnregisterOnlineSubsystemDelegates();
+
+	if (GEngine->OnNetworkFailure().IsBoundToObject(this) == true)
+	{
+		GEngine->OnNetworkFailure().Remove(m_NetworkFailureDelegateHandle);
+	}
+	
+	if (GEngine->OnTravelFailure().IsBoundToObject(this) == true)
+	{
+		GEngine->OnTravelFailure().Remove(m_TravelFailureDelegateHandle);
+	}
 }
 /*
 void UNetworkGameInstance::StartGameInstance()
@@ -165,7 +190,8 @@ void UNetworkGameInstance::OnStartSessionComplete(FName sessionName, bool wasSuc
 	if (wasSuccessful)
 	{
 		const FString url = MapPath + GameMap.ToString() + "?listen";
-		GetWorld()->ServerTravel(url);
+		GetWorld()->ServerTravel(url, true);
+		//UGameplayStatics::OpenLevel(GetWorld(), GameMap, true, "listen");
 	}
 	else
 	{
@@ -203,10 +229,22 @@ void UNetworkGameInstance::OnFindSessionsComplete(TSharedPtr<class FOnlineSessio
 		
 		for(auto&& session : sessions->SearchResults)
 		{
-			const auto player = GetPlayerControllerFromNetId(GetWorld(), *session.Session.OwningUserId);
+			UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete owningUserId = %d"), session.Session.OwningUserId.Get());
+			UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete owningUserName %s"), *session.Session.OwningUserName);
+			auto player = GetPlayerControllerFromNetId(GetWorld(), *session.Session.OwningUserId);
 			if(player)
 			{
+				UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete GetPlayerControllerFromNetId"));
 				playerName = player->GetPlayerState<APlayerState>()->GetPlayerName();
+			}
+			else
+			{
+				player = GetFirstLocalPlayerController();
+				if(player)
+				{
+					UE_LOG(LogTemp, Display, TEXT("UNetworkGameInstance::OnFindSessionsComplete firstlocalplayercontroller"));
+					playerName = player->GetPlayerState<APlayerState>()->GetPlayerName();
+				}
 			}
 			UE_LOG(LogTemp,
 				Display,
