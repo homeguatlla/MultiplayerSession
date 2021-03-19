@@ -18,9 +18,13 @@ class MULTIPLAYERSESSIONS_API AMSFunctionalTest : public AFunctionalTest
 
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MS Functional Test")
-	void OnCreateAndStartSessionCompleted(bool bWasSuccessful);	
+	void OnCreateSessionCompleted(bool wasSuccessful);	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MS Functional Test")
-    void OnDestroySessionCompleted(bool bWasSuccessful);
+    void OnDestroySessionCompleted(bool wasSuccessful);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MS Functional Test")
+    void OnStartSessionCompleted(bool wasSuccessful);	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MS Functional Test")
+    void OnEndSessionCompleted(bool wasSuccessful);	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MS Functional Test")
     void OnFindSessionsCompleted(const TArray<FString>& sessions);
 

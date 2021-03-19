@@ -3,19 +3,35 @@
 
 #include "MSFunctionalTest.h"
 
-void AMSFunctionalTest::OnCreateAndStartSessionCompleted_Implementation(bool bWasSuccessful)
+void AMSFunctionalTest::OnCreateSessionCompleted_Implementation(bool wasSuccessful)
 {
 	if(OnlineSubsystem)
 	{
-		OnlineSubsystem->OnCreateAndStartSessionCompleted(bWasSuccessful);
+		OnlineSubsystem->OnCreateSessionCompleted(wasSuccessful);
 	}
 }
 
-void AMSFunctionalTest::OnDestroySessionCompleted_Implementation(bool bWasSuccessful)
+void AMSFunctionalTest::OnDestroySessionCompleted_Implementation(bool wasSuccessful)
 {
 	if(OnlineSubsystem)
 	{
-		OnlineSubsystem->OnDestroySessionCompleted(bWasSuccessful);
+		OnlineSubsystem->OnDestroySessionCompleted(wasSuccessful);
+	}
+}
+
+void AMSFunctionalTest::OnStartSessionCompleted_Implementation(bool wasSuccessful)
+{
+	if(OnlineSubsystem)
+	{
+		OnlineSubsystem->OnStartSessionCompleted(wasSuccessful);
+	}
+}
+
+void AMSFunctionalTest::OnEndSessionCompleted_Implementation(bool wasSuccessful)
+{
+	if(OnlineSubsystem)
+	{
+		OnlineSubsystem->OnEndSessionCompleted(wasSuccessful);
 	}
 }
 
@@ -26,3 +42,5 @@ void AMSFunctionalTest::OnFindSessionsCompleted_Implementation(const TArray<FStr
 		OnlineSubsystem->OnFindSessionsCompleted(sessions);
 	}
 }
+
+

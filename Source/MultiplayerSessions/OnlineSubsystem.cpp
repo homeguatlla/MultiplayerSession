@@ -91,7 +91,7 @@ void OnlineSubsystem::EndSession(FName sessionName)
 
 	if (sessions)
 	{
-		OnEndSessionCompleteDelegateHandle = sessions->AddOnStartSessionCompleteDelegate_Handle(OnEndSessionCompleteInternalDelegate);
+		OnEndSessionCompleteDelegateHandle = sessions->AddOnEndSessionCompleteDelegate_Handle(OnEndSessionCompleteInternalDelegate);
 		sessions->EndSession(sessionName);
 	}
 }
@@ -196,16 +196,11 @@ void OnlineSubsystem::OnCreateSessionComplete(FName sessionName, bool wasSuccess
 	if (sessions)
 	{
 		sessions->ClearOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteInternalDelegateHandle);
-		if (wasSuccessful)
-		{
-			OnStartSessionCompleteDelegateHandle = sessions->AddOnStartSessionCompleteDelegate_Handle(OnStartSessionCompleteInternalDelegate);
-			return;
-		}
 	}
 		
 	if(m_CreateSessionComplete.IsBound())
 	{
-		m_CreateSessionComplete.Broadcast(sessionName, false);
+		m_CreateSessionComplete.Broadcast(sessionName, wasSuccessful);
 	}
 }
 
