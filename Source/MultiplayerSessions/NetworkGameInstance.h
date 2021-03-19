@@ -6,7 +6,7 @@
 
 
 #include "IOnlineGameSession.h"
-#include "OnlineSubsystem.h"
+#include "SessionsOnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "NetworkGameInstance.generated.h"
 
@@ -66,7 +66,7 @@ private:
 	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
 	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 	
-	TSharedPtr<OnlineSubsystem> m_OnlineSubsystem;
+	TSharedPtr<SessionsOnlineSubsystem> m_OnlineSubsystem;
 	FString m_SessionIdToFound;
 	bool m_IsLAN;
 	FDelegateHandle m_NetworkFailureDelegateHandle;

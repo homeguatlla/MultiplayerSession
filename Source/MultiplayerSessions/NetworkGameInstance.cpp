@@ -172,7 +172,7 @@ void UNetworkGameInstance::OnDestroySessionComplete(FName sessionName, bool wasS
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonExampleMap", true);
+		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true);
 	}
 	else
 	{
@@ -208,7 +208,7 @@ void UNetworkGameInstance::OnEndSessionComplete(FName sessionName, bool wasSucce
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), "ThirdPersonExampleMap", true);
+		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true);
 	}
 	else
 	{
@@ -336,7 +336,7 @@ void UNetworkGameInstance::InitializeOnlineSubsystem()
 {
 	UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::InitializeOnlineSubsystem"));
 	
-	m_OnlineSubsystem =  MakeShareable(new OnlineSubsystem(GetWorld()));
+	m_OnlineSubsystem =  MakeShareable(new SessionsOnlineSubsystem(GetWorld()));
 	
 	OnCreateSessionCompleteDelegateHandle = m_OnlineSubsystem->OnCreateSessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnCreateSessionComplete);
 	OnDestroySessionCompleteDelegateHandle = m_OnlineSubsystem->OnDestroySessionCompleteDelegate().AddUObject(this, &UNetworkGameInstance::OnDestroySessionComplete);

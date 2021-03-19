@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 
-#include "BPOnlineSubsystem.h"
+#include "BPSessionsOnlineSubsystem.h"
 #include "FunctionalTest.h"
 #include "MSFunctionalTest.generated.h"
 
@@ -29,5 +29,5 @@ public:
     void OnFindSessionsCompleted(const TArray<FString>& sessions);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="MS Functional Test")
-	ABPOnlineSubsystem* OnlineSubsystem;
+	ABPSessionsOnlineSubsystem* OnlineSubsystem;
 };
