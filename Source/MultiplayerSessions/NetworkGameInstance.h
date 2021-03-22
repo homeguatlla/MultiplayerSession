@@ -6,6 +6,7 @@
 
 
 #include "IOnlineGameSession.h"
+#include "MSGameSession.h"
 #include "SessionsOnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "NetworkGameInstance.generated.h"
@@ -35,40 +36,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
 	
-	void UnregisterOnlineSubsystemDelegates() const;
 	void Shutdown() override;
+	AMSGameSession* GetGameSession() const;
 	void Init() override;
 		
 private:
-	/*void StartGameInstance() override;
-#if WITH_EDITOR
-	FGameInstancePIEResult StartPlayInEditorGameInstance(ULocalPlayer* localPlayer, const FGameInstancePIEParameters& params) override;
-#endif*/
-	void InitializeOnlineSubsystem();
-	bool IsLAN() const;
 	void HandleNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failureType,
                               const FString& errorString) const;
 	void TravelFailure(UWorld* world, ETravelFailure::Type failureType, const FString& errorString);
 
-	void OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const;
-	void OnDestroySessionComplete(FName sessionName, bool wasSuccessful) const;
-	void OnStartSessionComplete(FName sessionName, bool wasSuccessful) const;
-	void OnEndSessionComplete(FName sessionName, bool wasSuccessful) const;
-	void OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> sessions, bool wasSuccessful);
-	void OnJoinSessionComplete(const FString& travelURL, EOnJoinSessionCompleteResult::Type result);
-
-	FString JoinSessionCompleteResultTypeToFString(EOnJoinSessionCompleteResult::Type type) const;
-
-	FDelegateHandle OnCreateSessionCompleteDelegateHandle;
-	FDelegateHandle OnDestroySessionCompleteDelegateHandle;
-	FDelegateHandle OnStartSessionCompleteDelegateHandle;
-	FDelegateHandle OnEndSessionCompleteDelegateHandle;
-	FDelegateHandle OnFindSessionsCompleteDelegateHandle;
-	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
-	
-	TSharedPtr<SessionsOnlineSubsystem> m_OnlineSubsystem;
-	FString m_SessionIdToFound;
-	bool m_IsLAN;
 	FDelegateHandle m_NetworkFailureDelegateHandle;
 	FDelegateHandle m_TravelFailureDelegateHandle;
+	bool m_IsLAN;
 };

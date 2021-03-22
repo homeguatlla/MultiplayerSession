@@ -9,6 +9,9 @@ public class MultiplayerSessionsEditorTarget : TargetRules
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.Add("MultiplayerSessions");
+		ExtraModuleNames.AddRange(new string[]{
+			"MultiplayerSessions", 
+			"MultiplayerSessionsTests"}
+		);
 	}
 }

@@ -13,7 +13,7 @@ public class MultiplayerSessionsTarget : TargetRules
 		// enable logs and debugging for Shipping builds
 		if (Configuration == UnrealTargetConfiguration.Shipping)
 		{
-			BuildEnvironment = TargetBuildEnvironment.Unique;
+			//BuildEnvironment = TargetBuildEnvironment.Unique;
 			bUseChecksInShipping = true;
 			bUseLoggingInShipping = true;
 		}

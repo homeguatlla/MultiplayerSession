@@ -13,6 +13,7 @@ class AMultiplayerSessionsGameMode : public AGameModeBase
 
 public:
 	AMultiplayerSessionsGameMode();
+	TSubclassOf<AGameSession> GetGameSessionClass() const override;
 };
 
 

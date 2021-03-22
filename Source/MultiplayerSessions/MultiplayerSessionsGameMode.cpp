@@ -1,8 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "MultiplayerSessionsGameMode.h"
+
+#include "MSGameSession.h"
 #include "MultiplayerSessionsCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+
 
 AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 {
@@ -14,4 +17,9 @@ AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+}
+
+TSubclassOf<AGameSession> AMultiplayerSessionsGameMode::GetGameSessionClass() const
+{
+	return AMSGameSession::StaticClass();
 }
