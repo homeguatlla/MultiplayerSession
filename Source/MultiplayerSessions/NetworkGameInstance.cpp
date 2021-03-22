@@ -11,6 +11,7 @@
 const FName LobbyMap("LobbyMap");
 const FName GameMap("GameMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
+const int32 MaxNumPlayers = 4;
 
 UNetworkGameInstance::UNetworkGameInstance(const FObjectInitializer& ObjectInitializer) :
 Super(ObjectInitializer)
@@ -88,7 +89,6 @@ void UNetworkGameInstance::CreateSession()
 {
 	ULocalPlayer* const Player = GetFirstGamePlayer();
 	const bool isPresence = true;
-	const int maxNumPlayers = 4;
 	
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
 		FString::Printf(TEXT("UNetworkGameInstance::CreateSession is LAN? %d"), IsLAN() ));
@@ -99,7 +99,7 @@ void UNetworkGameInstance::CreateSession()
 		GameSessionName,
 		IsLAN(),
 		isPresence,
-		maxNumPlayers);
+		MaxNumPlayers);
 }
 
 void UNetworkGameInstance::DestroySessionAndLeaveGame()
