@@ -4,12 +4,8 @@
 #include "NetworkGameInstance.h"
 
 #include "MSGameSession.h"
-#include "OnlineSessionSettings.h"
+#include "MultiplayerSessionsGameMode.h"
 #include "GameFramework/GameModeBase.h"
-#include "GameFramework/GameSession.h"
-#include "GameFramework/PlayerState.h"
-#include "Kismet/GameplayStatics.h"
-
 
 const FName LobbyMap("LobbyMap");
 const FName GameMap("GameMap");
@@ -80,8 +76,20 @@ void UNetworkGameInstance::DestroySessionAndLeaveGame()
 
 void UNetworkGameInstance::StartSession()
 {
-	GetGameSession()->StartSession();
+	/*
+	auto* const gameMode = GetWorld() != NULL ? Cast<AMultiplayerSessionsGameMode>(GetWorld()->GetAuthGameMode()) : NULL;
+	if (gameMode)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::StartSession StartMatch"));
+		
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("UNetworkGameInstance::StartSession Error game mode null"));
+	}*/
+	GetGameSession()->StartGame();
 }
+
 void UNetworkGameInstance::EndSession()
 {
 	GetGameSession()->EndSession();
@@ -106,5 +114,5 @@ void UNetworkGameInstance::HandleNetworkFailure(UWorld * world, UNetDriver *netD
 
 void UNetworkGameInstance::TravelFailure(UWorld* world, ETravelFailure::Type failureType, const FString& errorString)
 {
-	UE_LOG(LogLoad, Fatal, TEXT("UNetworkGameInstance::TravelFailure  %s"), *errorString);
+	UE_LOG(LogLoad, Error, TEXT("UNetworkGameInstance::TravelFailure  %s"), *errorString);
 }

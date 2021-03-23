@@ -4,6 +4,9 @@
 #include "MSGameSession.h"
 
 
+
+#include "MSPlayerController.h"
+#include "NetworkGameInstance.h"
 #include "OnlineSessionSettings.h"
 #include "SessionsOnlineSubsystem.h"
 #include "GameFramework/PlayerState.h"
@@ -14,11 +17,18 @@ const FName GameMap("GameMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
 const int32 MaxNumPlayers = 4;
 
+AMSGameSession::AMSGameSession(const FObjectInitializer& objectInitializer)
+{
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::AMSGameSession"));
+	
+}
+
 void AMSGameSession::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::BeginPlay"));
-	
+
+	m_IsMatchReadyToStart = false;
 	InitializeOnlineSubsystem();
 }
 
@@ -32,7 +42,7 @@ void AMSGameSession::BeginDestroy()
 
 bool AMSGameSession::HandleStartMatchRequest()
 {
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleStartMatchRequest"));
+	UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::HandleStartMatchRequest"));
 	return Super::HandleStartMatchRequest();
 }
 
@@ -45,7 +55,14 @@ void AMSGameSession::HandleMatchIsWaitingToStart()
 void AMSGameSession::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleMatchHasStarted"));
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleMatchHasStarted StartSession"));
+
+	if(m_IsMatchReadyToStart)
+	{
+		//Once someone called StartPlay, server starts the game
+		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::HandleMatchHasStarted"));
+		//StartSession();
+	}
 }
 
 void AMSGameSession::HandleMatchHasEnded()
@@ -56,6 +73,8 @@ void AMSGameSession::HandleMatchHasEnded()
 
 void AMSGameSession::CreateSession(bool isLan)
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::CreateSession"));
+	
 	ULocalPlayer* const Player = GetLocalPlayer();
 	const bool isPresence = true;
 	m_IsLAN = isLan;
@@ -74,29 +93,44 @@ void AMSGameSession::CreateSession(bool isLan)
 
 void AMSGameSession::DestroySessionAndLeaveGame()
 {
-	
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::DestroySessionAndLeaveGame"));
 	const FString sessionName(LexToString(GameSessionName));
 		
 	m_OnlineSubsystem->DestroySession(GameSessionName);
 }
 
+void AMSGameSession::SetMatchReadyToStart(bool isReady)
+{
+	m_IsMatchReadyToStart = isReady;
+}
+
+void AMSGameSession::StartGame()
+{
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartGame ServerTravel"));
+	const FString url = MapPath + GameMap.ToString() + "?listen";
+	GetWorld()->ServerTravel(url, true);
+}
+
 void AMSGameSession::StartSession()
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartSession"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
 		FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
-	UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::StartSession"));
 	m_OnlineSubsystem->StartSession(GameSessionName);
 }
+
 void AMSGameSession::EndSession()
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::EndSession"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
 		FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
-	UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::EndSession"));
 	m_OnlineSubsystem->EndSession(GameSessionName);
 }
 
 void AMSGameSession::FindSessions()
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::FindSessions"));
+	
 	ULocalPlayer* const player = GetLocalPlayer();
 
 	m_SessionIdToFound.Empty();
@@ -111,33 +145,42 @@ void AMSGameSession::JoinSession()
 
 	if(!m_SessionIdToFound.IsEmpty())
 	{
+		UE_LOG(LogTemp, Display, TEXT("AMSGameSession::JoinSession"));
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session connecting: %s"), *m_SessionIdToFound));
-		m_OnlineSubsystem->JoinSession(player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, m_SessionIdToFound);
+		bool result = m_OnlineSubsystem->JoinSession(player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, m_SessionIdToFound);
+		if(!result)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Error join session")));
+		}
 	}
 }
 
 void AMSGameSession::OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnCreateSessionComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
-		FString::Printf(TEXT("AMSGameSession::OnCreateAndStartSessionComplete")));
+		FString::Printf(TEXT("AMSGameSession::OnCreateSessionComplete")));
 		
 	if (wasSuccessful)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
-			FString::Printf(TEXT("AMSGameSession::OnCreateAndStartSessionComplete Session: %s"), *sessionName.ToString()));
+			FString::Printf(TEXT("AMSGameSession::OnCreateSessionComplete Session: %s"), *sessionName.ToString()));
 
-		//UGameplayStatics::OpenLevel(GetWorld(), GameMap, true, "listen");
+		//const FString url = MapPath + GameMap.ToString() + "?listen";
+		//GetWorld()->ServerTravel(url, true);
+		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
-			FString::Printf(TEXT("AMSGameSession::OnCreateAndStartSessionComplete not successful")));
-		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::OnCreateAndStartSessionComplete not successful"));
+			FString::Printf(TEXT("AMSGameSession::OnCreateSessionComplete not successful")));
+		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::OnCreateSessionComplete not successful"));
 	}
 }
 
 void AMSGameSession::OnDestroySessionComplete(FName sessionName, bool wasSuccessful) const
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnDestroySessionComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 		FString::Printf(TEXT("AMSGameSession::OnDestroySessionComplete")));
 	
@@ -153,15 +196,20 @@ void AMSGameSession::OnDestroySessionComplete(FName sessionName, bool wasSuccess
 	}
 }
 
-void AMSGameSession::OnStartSessionComplete(FName sessionName, bool wasSuccessful) const
+void AMSGameSession::OnStartSessionComplete(FName sessionName, bool wasSuccessful)
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnStartSessionComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 		FString::Printf(TEXT("AMSGameSession::OnStartSessionComplete")));
 	
 	if (wasSuccessful)
 	{
-		const FString url = MapPath + GameMap.ToString() + "?listen";
-		GetWorld()->ServerTravel(url, true);
+		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::OnStartSessionComplete notifying game started"));
+			
+		//NotifyClientsGameStarted();
+		//TODO shooter game but not gr1 do a RegisterLocalPlayer
+		//const FString url = MapPath + GameMap.ToString() + "?listen";
+		//GetWorld()->ServerTravel(url, true);
 		//UGameplayStatics::OpenLevel(GetWorld(), GameMap, true, "listen");
 	}
 	else
@@ -172,8 +220,9 @@ void AMSGameSession::OnStartSessionComplete(FName sessionName, bool wasSuccessfu
 	}
 }
 
-void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful) const
+void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful)
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnEndSessionComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 		FString::Printf(TEXT("AMSGameSession::OnEndSessionComplete")));
 	
@@ -191,6 +240,7 @@ void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful)
 
 void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> sessions, bool wasSuccessful)
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 		FString::Printf(TEXT("AMSGameSession::OnFindSessionsComplete")));
 	
@@ -210,7 +260,7 @@ void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearc
 			}
 			else
 			{
-				player = GetWorld()->GetFirstPlayerController();//GetFirstLocalPlayerController();
+				player = GetWorld()->GetFirstPlayerController();
 				if(player)
 				{
 					UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete firstlocalplayercontroller"));
@@ -251,13 +301,14 @@ void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearc
 
 void AMSGameSession::OnJoinSessionComplete(const FString& travelURL, EOnJoinSessionCompleteResult::Type result)
 {
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnJoinSessionComplete"));
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("AMSGameSession::OnJoinSessionComplete")));
 	if(result == EOnJoinSessionCompleteResult::Type::Success)
 	{
 		UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnJoinSessionComplete travel to = %s"), *travelURL);
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 			FString::Printf(TEXT("AMSGameSession::OnJoinSessionComplete travel to = %s"), *travelURL));
-		const auto playerController = GetWorld()->GetFirstPlayerController(); //GetFirstLocalPlayerController();
+		const auto playerController = GetWorld()->GetFirstPlayerController();
 		if(playerController)
 		{
 			playerController->ClientTravel(travelURL, ETravelType::TRAVEL_Absolute);
@@ -295,6 +346,20 @@ FString AMSGameSession::JoinSessionCompleteResultTypeToFString(EOnJoinSessionCom
 		case EOnJoinSessionCompleteResult::UnknownError:
 		default:
 			return "UnknownError";
+	}
+}
+
+void AMSGameSession::NotifyClientsGameStarted() const
+{
+	// tell non-local players to start online game
+	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
+	{
+		AMSPlayerController* playerController = Cast<AMSPlayerController>(*it);
+		if (playerController && !playerController->IsLocalPlayerController())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::NotifyClientsGameStarted notifying a playercontroller"));
+			playerController->NotifyClientGameStarted(GameSessionName);
+		}
 	}
 }
 
@@ -350,5 +415,6 @@ void AMSGameSession::UnregisterOnlineSubsystemDelegates() const
 
 ULocalPlayer* AMSGameSession::GetLocalPlayer() const
 {
-	return GetWorld()->GetFirstPlayerController()->GetLocalPlayer();
+	const auto gameInstance = Cast<UNetworkGameInstance>(GetWorld()->GetGameInstance());
+	return gameInstance->GetFirstGamePlayer(); //GetWorld()->GetFirstPlayerController()->GetLocalPlayer();
 }

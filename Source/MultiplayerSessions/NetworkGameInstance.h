@@ -7,7 +7,6 @@
 
 #include "IOnlineGameSession.h"
 #include "MSGameSession.h"
-#include "SessionsOnlineSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "NetworkGameInstance.generated.h"
 
