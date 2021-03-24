@@ -31,7 +31,7 @@ AMSGameSession* AMultiplayerSessionsGameMode::GetGameSession() const
 void AMultiplayerSessionsGameMode::CreateSession()
 {
 	const auto gameInstance = Cast<UNetworkGameInstance>(GetWorld()->GetGameInstance());
-	GetGameSession()->CreateSession(gameInstance->IsLan());
+	GetGameSession()->CreateSession(gameInstance->IsLan(), MaxNumPlayers, DefaultPlayerName.ToString());
 }
 
 void AMultiplayerSessionsGameMode::DestroySessionAndLeaveGame()

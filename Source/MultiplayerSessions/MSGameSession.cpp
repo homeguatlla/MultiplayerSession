@@ -12,7 +12,6 @@ const FName GameMap("GameMap");
 const FName MainMap("MainMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
 const FString PlayerUnknown("Unknown");
-const int32 MaxNumPlayers = 4;
 
 AMSGameSession::AMSGameSession(const FObjectInitializer& objectInitializer)
 {
@@ -36,13 +35,14 @@ void AMSGameSession::BeginDestroy()
 	UnregisterOnlineSubsystemDelegates();
 }
 
-void AMSGameSession::CreateSession(bool isLan)
+void AMSGameSession::CreateSession(bool isLan, uint8 maxNumPlayers, const FString& defaultPlayerName)
 {
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::CreateSession"));
 	
 	ULocalPlayer* const Player = GetLocalPlayer();
 	const bool isPresence = true;
 	m_IsLAN = isLan;
+	m_DefaultPlayerName = defaultPlayerName;
 	
 	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
 		FString::Printf(TEXT("UNetworkGameInstance::CreateSession is LAN? %d"), IsLAN() ));
@@ -53,7 +53,7 @@ void AMSGameSession::CreateSession(bool isLan)
 		GameSessionName,
 		IsLAN(),
 		isPresence,
-		MaxNumPlayers);
+		maxNumPlayers);
 }
 
 void AMSGameSession::DestroySessionAndLeaveGame()
@@ -205,7 +205,7 @@ void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearc
 	
 	if(wasSuccessful)
 	{
-		FString playerName(PlayerUnknown);
+		FString playerName(m_DefaultPlayerName);
 		
 		for(auto&& session : sessions->SearchResults)
 		{

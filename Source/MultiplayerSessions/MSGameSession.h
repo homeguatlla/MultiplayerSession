@@ -16,7 +16,7 @@ public:
 	void BeginPlay() override;
 	void BeginDestroy() override;
 	
-	void CreateSession(bool isLan);
+	void CreateSession(bool isLan, uint8 maxNumPlayers, const FString& defaultPlayerName);
 	void FindSessions();
 	void JoinSession();
 	void DestroySessionAndLeaveGame();
@@ -52,4 +52,5 @@ private:
 	FString m_SessionIdToFound;
 	bool m_IsLAN;
 	bool m_IsMatchReadyToStart;
+	FString m_DefaultPlayerName;
 };
