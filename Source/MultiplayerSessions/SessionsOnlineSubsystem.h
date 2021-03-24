@@ -8,7 +8,7 @@ public:
 	virtual ~SessionsOnlineSubsystem();
 
 	/*
-	 * bIsPresence: Setting the way that a user's online status will appear to other users, such as "Online", "Away", "Playing a game", and so on.
+	 * isPresence: Setting the way that a user's online status will appear to other users, such as "Online", "Away", "Playing a game", and so on.
 	 */
 	bool CreateSession(TSharedPtr<const FUniqueNetId> userId, FName sessionName, bool isLan, bool isPresence, int32 maxNumPlayers);
 	void StartSession(FName sessionName);

@@ -1,16 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "NetworkGameInstance.h"
-
 #include "MSGameSession.h"
-#include "MultiplayerSessionsGameMode.h"
 #include "GameFramework/GameModeBase.h"
-
-const FName LobbyMap("LobbyMap");
-const FName GameMap("GameMap");
-const FString MapPath("/Game/ThirdPersonCPP/Maps/");
-const int32 MaxNumPlayers = 4;
 
 UNetworkGameInstance::UNetworkGameInstance(const FObjectInitializer& ObjectInitializer) :
 Super(ObjectInitializer)
@@ -74,20 +64,15 @@ void UNetworkGameInstance::DestroySessionAndLeaveGame()
 	GetGameSession()->DestroySessionAndLeaveGame();
 }
 
+void UNetworkGameInstance::StartGame()
+{
+	GetGameSession()->StartGame();
+}
+
+//Useless
 void UNetworkGameInstance::StartSession()
 {
-	/*
-	auto* const gameMode = GetWorld() != NULL ? Cast<AMultiplayerSessionsGameMode>(GetWorld()->GetAuthGameMode()) : NULL;
-	if (gameMode)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("UNetworkGameInstance::StartSession StartMatch"));
-		
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("UNetworkGameInstance::StartSession Error game mode null"));
-	}*/
-	GetGameSession()->StartGame();
+	GetGameSession()->StartSession();
 }
 
 void UNetworkGameInstance::EndSession()
@@ -104,6 +89,8 @@ void UNetworkGameInstance::JoinSession()
 {
 	GetGameSession()->JoinSession();
 }
+
+
 
 void UNetworkGameInstance::HandleNetworkFailure(UWorld * world, UNetDriver *netDriver, ENetworkFailure::Type failureType, const FString& errorString = TEXT("")) const
 {

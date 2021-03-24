@@ -1,10 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "MSGameSession.h"
-
-
-
 #include "MSPlayerController.h"
 #include "NetworkGameInstance.h"
 #include "OnlineSessionSettings.h"
@@ -14,6 +9,7 @@
 
 const FName LobbyMap("LobbyMap");
 const FName GameMap("GameMap");
+const FName MainMap("MainMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
 const int32 MaxNumPlayers = 4;
 
@@ -28,7 +24,6 @@ void AMSGameSession::BeginPlay()
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::BeginPlay"));
 
-	m_IsMatchReadyToStart = false;
 	InitializeOnlineSubsystem();
 }
 
@@ -38,37 +33,6 @@ void AMSGameSession::BeginDestroy()
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::BeginDestroy"));
 	
 	UnregisterOnlineSubsystemDelegates();
-}
-
-bool AMSGameSession::HandleStartMatchRequest()
-{
-	UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::HandleStartMatchRequest"));
-	return Super::HandleStartMatchRequest();
-}
-
-void AMSGameSession::HandleMatchIsWaitingToStart()
-{
-	Super::HandleMatchIsWaitingToStart();
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleMatchIsWaitingToStart"));
-}
-
-void AMSGameSession::HandleMatchHasStarted()
-{
-	Super::HandleMatchHasStarted();
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleMatchHasStarted StartSession"));
-
-	if(m_IsMatchReadyToStart)
-	{
-		//Once someone called StartPlay, server starts the game
-		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::HandleMatchHasStarted"));
-		//StartSession();
-	}
-}
-
-void AMSGameSession::HandleMatchHasEnded()
-{
-	Super::HandleMatchHasEnded();
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::HandleMatchHasEnded"));
 }
 
 void AMSGameSession::CreateSession(bool isLan)
@@ -99,11 +63,6 @@ void AMSGameSession::DestroySessionAndLeaveGame()
 	m_OnlineSubsystem->DestroySession(GameSessionName);
 }
 
-void AMSGameSession::SetMatchReadyToStart(bool isReady)
-{
-	m_IsMatchReadyToStart = isReady;
-}
-
 void AMSGameSession::StartGame()
 {
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartGame ServerTravel"));
@@ -111,21 +70,6 @@ void AMSGameSession::StartGame()
 	GetWorld()->ServerTravel(url, true);
 }
 
-void AMSGameSession::StartSession()
-{
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartSession"));
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
-		FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
-	m_OnlineSubsystem->StartSession(GameSessionName);
-}
-
-void AMSGameSession::EndSession()
-{
-	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::EndSession"));
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
-		FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
-	m_OnlineSubsystem->EndSession(GameSessionName);
-}
 
 void AMSGameSession::FindSessions()
 {
@@ -155,6 +99,22 @@ void AMSGameSession::JoinSession()
 	}
 }
 
+void AMSGameSession::StartSession()
+{
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartSession"));
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
+        FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
+	m_OnlineSubsystem->StartSession(GameSessionName);
+}
+
+void AMSGameSession::EndSession()
+{
+	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::EndSession"));
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,
+        FString::Printf(TEXT("UNetworkGameInstance::StartSession")));
+	m_OnlineSubsystem->EndSession(GameSessionName);
+}
+
 void AMSGameSession::OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const
 {
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnCreateSessionComplete"));
@@ -166,8 +126,6 @@ void AMSGameSession::OnCreateSessionComplete(FName sessionName, bool wasSuccessf
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 			FString::Printf(TEXT("AMSGameSession::OnCreateSessionComplete Session: %s"), *sessionName.ToString()));
 
-		//const FString url = MapPath + GameMap.ToString() + "?listen";
-		//GetWorld()->ServerTravel(url, true);
 		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
 	}
 	else
@@ -196,6 +154,10 @@ void AMSGameSession::OnDestroySessionComplete(FName sessionName, bool wasSuccess
 	}
 }
 
+//Only test purposes
+//This both methods are overriden and the StartSession is being called
+//automatically after game match started, just after ServerTravel, and
+//all clients have the map server gone loaded.
 void AMSGameSession::OnStartSessionComplete(FName sessionName, bool wasSuccessful)
 {
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnStartSessionComplete"));
@@ -205,12 +167,6 @@ void AMSGameSession::OnStartSessionComplete(FName sessionName, bool wasSuccessfu
 	if (wasSuccessful)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::OnStartSessionComplete notifying game started"));
-			
-		//NotifyClientsGameStarted();
-		//TODO shooter game but not gr1 do a RegisterLocalPlayer
-		//const FString url = MapPath + GameMap.ToString() + "?listen";
-		//GetWorld()->ServerTravel(url, true);
-		//UGameplayStatics::OpenLevel(GetWorld(), GameMap, true, "listen");
 	}
 	else
 	{
@@ -237,6 +193,7 @@ void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful)
 		UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::OnDestroySessionComplete not successful"));
 	}
 }
+//end only test purposes
 
 void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearch> sessions, bool wasSuccessful)
 {
@@ -346,20 +303,6 @@ FString AMSGameSession::JoinSessionCompleteResultTypeToFString(EOnJoinSessionCom
 		case EOnJoinSessionCompleteResult::UnknownError:
 		default:
 			return "UnknownError";
-	}
-}
-
-void AMSGameSession::NotifyClientsGameStarted() const
-{
-	// tell non-local players to start online game
-	for (FConstPlayerControllerIterator it = GetWorld()->GetPlayerControllerIterator(); it; ++it)
-	{
-		AMSPlayerController* playerController = Cast<AMSPlayerController>(*it);
-		if (playerController && !playerController->IsLocalPlayerController())
-		{
-			UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::NotifyClientsGameStarted notifying a playercontroller"));
-			playerController->NotifyClientGameStarted(GameSessionName);
-		}
 	}
 }
 

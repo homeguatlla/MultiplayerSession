@@ -1,18 +1,12 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
-
-
 #include "IOnlineGameSession.h"
 #include "MSGameSession.h"
 #include "Engine/GameInstance.h"
 #include "NetworkGameInstance.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
 class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance, public IIOnlineGameSession
 {
@@ -24,8 +18,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void CreateSession() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-    void StartSession() override;
+	
+	void StartSession() override;
+	
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void EndSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
@@ -34,6 +29,8 @@ public:
 	void JoinSession() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
 	void DestroySessionAndLeaveGame() override;
+	UFUNCTION(BlueprintCallable, Category="Game")
+    void StartGame();
 	
 	void Shutdown() override;
 	AMSGameSession* GetGameSession() const;

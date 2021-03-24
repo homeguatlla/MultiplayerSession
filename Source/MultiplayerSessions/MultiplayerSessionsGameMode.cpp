@@ -24,15 +24,10 @@ TSubclassOf<AGameSession> AMultiplayerSessionsGameMode::GetGameSessionClass() co
 	return AMSGameSession::StaticClass();
 }
 
-void AMultiplayerSessionsGameMode::SetMatchReadyToStart(bool isReady)
-{
-	auto gameSession = Cast<AMSGameSession>(GameSession);
-	gameSession->SetMatchReadyToStart(isReady);
-}
-
 void AMultiplayerSessionsGameMode::GenericPlayerInitialization(AController* C)
 {
 	Super::GenericPlayerInitialization(C);
+	UE_LOG(LogTemp, Display, TEXT("AMultiplayerSessionsGameMode::GenericPlayerInitialization"));
 	
 	//Put initialization code here like spawn positions etc once
 	//the seamless travel has finished for each player
