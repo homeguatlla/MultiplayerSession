@@ -11,6 +11,7 @@ const FName LobbyMap("LobbyMap");
 const FName GameMap("GameMap");
 const FName MainMap("MainMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
+const FString PlayerUnknown("Unknown");
 const int32 MaxNumPlayers = 4;
 
 AMSGameSession::AMSGameSession(const FObjectInitializer& objectInitializer)
@@ -95,6 +96,7 @@ void AMSGameSession::JoinSession()
 		if(!result)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Error join session")));
+			UE_LOG(LogTemp, Warning, TEXT("AMSGameSession::JoinSession Error coundn't join to the session"));
 		}
 	}
 }
@@ -203,27 +205,19 @@ void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearc
 	
 	if(wasSuccessful)
 	{
-		FString playerName("unknown");
+		FString playerName(PlayerUnknown);
 		
 		for(auto&& session : sessions->SearchResults)
 		{
 			UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete owningUserId = %d"), session.Session.OwningUserId.Get());
 			UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete owningUserName %s"), *session.Session.OwningUserName);
-			auto player = GetPlayerControllerFromNetId(GetWorld(), *session.Session.OwningUserId);
+		
+			const auto player = GetPlayerControllerFromUserId(*session.Session.OwningUserId);
 			if(player)
 			{
-				UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete GetPlayerControllerFromNetId"));
 				playerName = player->GetPlayerState<APlayerState>()->GetPlayerName();
 			}
-			else
-			{
-				player = GetWorld()->GetFirstPlayerController();
-				if(player)
-				{
-					UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete firstlocalplayercontroller"));
-					playerName = player->GetPlayerState<APlayerState>()->GetPlayerName();
-				}
-			}
+			
 			UE_LOG(LogTemp,
 				Display,
 				TEXT("AMSGameSession::OnFindSessionsComplete session id = %s owner name = %s public connections available: %d"),
@@ -360,4 +354,15 @@ ULocalPlayer* AMSGameSession::GetLocalPlayer() const
 {
 	const auto gameInstance = Cast<UNetworkGameInstance>(GetWorld()->GetGameInstance());
 	return gameInstance->GetFirstGamePlayer(); //GetWorld()->GetFirstPlayerController()->GetLocalPlayer();
+}
+
+APlayerController* AMSGameSession::GetPlayerControllerFromUserId(const FUniqueNetId& userId) const
+{
+	auto player = GetPlayerControllerFromNetId(GetWorld(), userId);
+	if(!player)
+	{
+		player = GetWorld()->GetFirstPlayerController();
+	}
+	
+	return player;
 }

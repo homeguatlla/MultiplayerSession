@@ -31,6 +31,7 @@ private:
 	void UnregisterOnlineSubsystemDelegates() const;
 	bool IsLAN() const;
 	ULocalPlayer* GetLocalPlayer() const;
+	APlayerController* GetPlayerControllerFromUserId(const FUniqueNetId& userId) const;
 	FString JoinSessionCompleteResultTypeToFString(EOnJoinSessionCompleteResult::Type type) const;
 
 	void OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const;
