@@ -4,13 +4,12 @@
 
 #include "MSGameSession.h"
 #include "MultiplayerSessionsCharacter.h"
+#include "NetworkGameInstance.h"
 #include "UObject/ConstructorHelpers.h"
 
 
 AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 {
-	//https://docs.unrealengine.com/en-US/InteractiveExperiences/Networking/Travelling/index.html
-	bUseSeamlessTravel = true;
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdPersonCPP/Blueprints/ThirdPersonCharacter"));
 	if (PlayerPawnBPClass.Class != NULL)
@@ -22,6 +21,48 @@ AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 TSubclassOf<AGameSession> AMultiplayerSessionsGameMode::GetGameSessionClass() const
 {
 	return AMSGameSession::StaticClass();
+}
+
+AMSGameSession* AMultiplayerSessionsGameMode::GetGameSession() const
+{
+	return Cast<AMSGameSession>(GameSession);
+}
+
+void AMultiplayerSessionsGameMode::CreateSession()
+{
+	const auto gameInstance = Cast<UNetworkGameInstance>(GetWorld()->GetGameInstance());
+	GetGameSession()->CreateSession(gameInstance->IsLan());
+}
+
+void AMultiplayerSessionsGameMode::DestroySessionAndLeaveGame()
+{
+	GetGameSession()->DestroySessionAndLeaveGame();
+}
+
+void AMultiplayerSessionsGameMode::StartGame()
+{
+	GetGameSession()->StartGame();
+}
+
+//Useless
+void AMultiplayerSessionsGameMode::StartSession()
+{
+	GetGameSession()->StartSession();
+}
+
+void AMultiplayerSessionsGameMode::EndSession()
+{
+	GetGameSession()->EndSession();
+}
+
+void AMultiplayerSessionsGameMode::FindSessions()
+{
+	GetGameSession()->FindSessions();
+}
+
+void AMultiplayerSessionsGameMode::JoinSession()
+{
+	GetGameSession()->JoinSession();
 }
 
 void AMultiplayerSessionsGameMode::GenericPlayerInitialization(AController* C)

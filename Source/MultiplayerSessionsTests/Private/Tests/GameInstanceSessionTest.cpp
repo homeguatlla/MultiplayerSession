@@ -46,7 +46,7 @@ bool FNetworkGameInstanceCreateSession::RunTest(const FString& Parameters)
 				gameInstance->CreateInitialPlayer(outError);
 				if(gameInstance->GetNumLocalPlayers() > 0)
 				{
-					gameInstance->CreateSession();	
+					//gameInstance->CreateSession();	
 				}
 			}
 		}

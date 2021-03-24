@@ -8,7 +8,7 @@
 
 
 UCLASS()
-class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance, public IIOnlineGameSession
+class MULTIPLAYERSESSIONS_API UNetworkGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 
@@ -16,25 +16,10 @@ public:
 	
 	UNetworkGameInstance(const FObjectInitializer& objectInitializer);
 	
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void CreateSession() override;
-	
-	void StartSession() override;
-	
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void EndSession() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void FindSessions() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void JoinSession() override;
-	UFUNCTION(BlueprintCallable, Category="GameSession")
-	void DestroySessionAndLeaveGame() override;
-	UFUNCTION(BlueprintCallable, Category="Game")
-    void StartGame();
-	
 	void Shutdown() override;
-	AMSGameSession* GetGameSession() const;
 	void Init() override;
+
+	bool IsLan() const { return m_IsLAN; }
 		
 private:
 	void HandleNetworkFailure(UWorld* world, UNetDriver* netDriver, ENetworkFailure::Type failureType,

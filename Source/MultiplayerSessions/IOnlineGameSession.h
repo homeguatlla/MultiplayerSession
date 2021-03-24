@@ -21,4 +21,6 @@ public:
 	virtual void FindSessions() = 0;
 	virtual void JoinSession() = 0;
 	virtual void DestroySessionAndLeaveGame() = 0;
+
+	virtual void StartGame() = 0;
 };

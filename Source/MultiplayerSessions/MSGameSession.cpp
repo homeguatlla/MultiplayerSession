@@ -146,7 +146,7 @@ void AMSGameSession::OnDestroySessionComplete(FName sessionName, bool wasSuccess
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true);
+		UGameplayStatics::OpenLevel(GetWorld(), MainMap, true);
 	}
 	else
 	{
@@ -186,7 +186,7 @@ void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful)
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true);
+		UGameplayStatics::OpenLevel(GetWorld(), MainMap, true);
 	}
 	else
 	{
