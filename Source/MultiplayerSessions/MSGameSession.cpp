@@ -78,21 +78,19 @@ void AMSGameSession::FindSessions()
 	
 	ULocalPlayer* const player = GetLocalPlayer();
 
-	m_SessionIdToFound.Empty();
-	
 	const bool isPresence = true;
 	m_OnlineSubsystem->FindSessions(player->GetPreferredUniqueNetId().GetUniqueNetId(), IsLAN(), isPresence);
 }
 
-void AMSGameSession::JoinSession()
+void AMSGameSession::JoinSession(const FString& sessionId)
 {
 	ULocalPlayer* const player = GetLocalPlayer();
 
-	if(!m_SessionIdToFound.IsEmpty())
+	if(!sessionId.IsEmpty())
 	{
 		UE_LOG(LogTemp, Display, TEXT("AMSGameSession::JoinSession"));
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session connecting: %s"), *m_SessionIdToFound));
-		bool result = m_OnlineSubsystem->JoinSession(player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, m_SessionIdToFound);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, FString::Printf(TEXT("Session connecting: %s"), *sessionId));
+		const bool result = m_OnlineSubsystem->JoinSession(player->GetPreferredUniqueNetId().GetUniqueNetId(), GameSessionName, sessionId);
 		if(!result)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Error join session")));
@@ -231,11 +229,8 @@ void AMSGameSession::OnFindSessionsComplete(TSharedPtr<class FOnlineSessionSearc
 					*playerName,
 					session.Session.NumOpenPublicConnections));
 		}
-		if(sessions->SearchResults.Num() > 0)
-		{
-			m_SessionIdToFound = sessions->SearchResults[0].GetSessionIdStr();
-		}
-		else
+		m_Sessions = sessions;
+		if(sessions->SearchResults.Num() <=0)
 		{
 			UE_LOG(LogTemp, Display, TEXT("AMSGameSession::OnFindSessionsComplete No sessions found"));			
 			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,

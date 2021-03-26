@@ -18,9 +18,10 @@ public:
 	
 	void CreateSession(bool isLan, uint8 maxNumPlayers, const FString& defaultPlayerName);
 	void FindSessions();
-	void JoinSession();
+	void JoinSession(const FString& sessionId);
 	void DestroySessionAndLeaveGame();
 	void StartGame();
+	TSharedPtr<class FOnlineSessionSearch> GetAvailableSessions() const { return m_Sessions; }
 
 	//Only used for functional test
 	void StartSession();
@@ -49,7 +50,7 @@ private:
 	FDelegateHandle OnJoinSessionCompleteDelegateHandle;
 	
 	TSharedPtr<SessionsOnlineSubsystem> m_OnlineSubsystem;
-	FString m_SessionIdToFound;
+	TSharedPtr<class FOnlineSessionSearch> m_Sessions;
 	bool m_IsLAN;
 	bool m_IsMatchReadyToStart;
 	FString m_DefaultPlayerName;

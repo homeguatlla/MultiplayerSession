@@ -30,9 +30,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="GameSession")
     void FindSessions() override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
-    void JoinSession() override;
+    void JoinSession(const FString& sessionId) override;
 	UFUNCTION(BlueprintCallable, Category="GameSession")
     void DestroySessionAndLeaveGame() override;
+	UFUNCTION(BlueprintCallable, Category="GameSession")
+    TArray<FOnlineSessionFindResult> GetAvailableSessions() const override;
+
 	UFUNCTION(BlueprintCallable, Category="Game")
     void StartGame() override;
 	
