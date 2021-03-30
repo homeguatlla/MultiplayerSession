@@ -6,22 +6,37 @@
 #include "MultiplayerSessionsCharacter.h"
 #include "NetworkGameInstance.h"
 #include "OnlineSessionSettings.h"
+#include "GameFramework/PlayerState.h"
 #include "UObject/ConstructorHelpers.h"
 
 
 AMultiplayerSessionsGameMode::AMultiplayerSessionsGameMode()
 {
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/ThirdPersonCPP/Blueprints/ThirdPersonCharacter"));
-	if (PlayerPawnBPClass.Class != NULL)
+	static ConstructorHelpers::FClassFinder<APawn> playerPawnBPClass(TEXT("/Game/ThirdPersonCPP/Blueprints/ThirdPersonCharacter"));
+	if (playerPawnBPClass.Class != nullptr)
 	{
-		DefaultPawnClass = PlayerPawnBPClass.Class;
+		DefaultPawnClass = playerPawnBPClass.Class;
 	}
 }
 
 TSubclassOf<AGameSession> AMultiplayerSessionsGameMode::GetGameSessionClass() const
 {
 	return AMSGameSession::StaticClass();
+}
+
+void AMultiplayerSessionsGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	
+	const FString playerName = NewPlayer->GetPlayerState<APlayerState>()->GetPlayerName();
+	UE_LOG(LogTemp, Warning, TEXT("AMultiplayerSessionsGameMode::PostLogin %s"), *playerName);
+	/*auto gameState = GetGameState<AMSGameState>();
+	if(gameState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AMultiplayerSessionsGameMode::PostLogin saving name %s"), *playerName);
+		gameState->AddPlayerName(playerName);
+	}*/
 }
 
 AMSGameSession* AMultiplayerSessionsGameMode::GetGameSession() const
@@ -54,7 +69,10 @@ TArray<FOnlineSessionFindResult> AMultiplayerSessionsGameMode::GetAvailableSessi
 		for(auto&& availableSession : sessions->SearchResults)
 		{
 			UE_LOG(LogTemp, Display, TEXT("AMultiplayerSessionsGameMode::GetAvailableSessions %s"), *availableSession.GetSessionIdStr());
-			result.Push(FOnlineSessionFindResult(availableSession.GetSessionIdStr(), availableSession.Session.NumOpenPublicConnections));
+			result.Push(FOnlineSessionFindResult(
+				availableSession.GetSessionIdStr(),
+				availableSession.Session.OwningUserName,
+				availableSession.Session.NumOpenPublicConnections));
 		}
 	}
 	return result;

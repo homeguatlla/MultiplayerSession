@@ -12,12 +12,15 @@ struct FOnlineSessionFindResult
 	GENERATED_BODY()
 
 	FOnlineSessionFindResult() = default;
-	FOnlineSessionFindResult(const FString& sessionIdParam, int32 numOpenPublicConnectionsParam) :
+	FOnlineSessionFindResult(const FString& sessionIdParam, const FString& serverNameParam, int32 numOpenPublicConnectionsParam) :
 	sessionId(sessionIdParam),
+	serverName(serverNameParam),
 	numOpenPublicConnections(numOpenPublicConnectionsParam) {}
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Online Session Find Result")
 	FString sessionId;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Online Session Find Result")
+	FString serverName;
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category="Online Session Find Result")
 	int32 numOpenPublicConnections;
 };

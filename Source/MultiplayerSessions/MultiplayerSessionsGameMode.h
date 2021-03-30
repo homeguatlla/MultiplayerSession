@@ -15,7 +15,8 @@ class AMultiplayerSessionsGameMode : public AGameMode, public IIOnlineGameSessio
 public:
 	AMultiplayerSessionsGameMode();
 	TSubclassOf<AGameSession> GetGameSessionClass() const override;	
-
+	void PostLogin(APlayerController* NewPlayer) override;
+	
 	//The IOnlineGameSession methods can only be called by server in multiplayer or singleplayer
 	//Once a player (starts game as singleplayer) is connected to a server (being a client) he cannot
 	//call these methods anymore. Maybe we would like to allow the client calls destroySessionAndLeaveGame
@@ -42,6 +43,15 @@ public:
 	/** Max number of players allowed to play in a multiplayer game together */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Multiplayer")
 	uint8 MaxNumPlayers;
+	
+	UPROPERTY(EditAnywhere, Category="Travelling")
+	FName LobbyMapName;
+	UPROPERTY(EditAnywhere, Category="Travelling")
+	FName MainMapName;
+	UPROPERTY(EditAnywhere, Category="Travelling")
+	FName GameMapName;
+	UPROPERTY(EditAnywhere, Category="Travelling")
+	FString MapsPath;
 
 protected:
 	void GenericPlayerInitialization(AController* C) override;

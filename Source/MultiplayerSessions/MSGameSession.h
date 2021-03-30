@@ -1,5 +1,7 @@
 #pragma once
 #include "CoreMinimal.h"
+
+#include "MultiplayerSessionsGameMode.h"
 #include "GameFramework/GameSession.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "MSGameSession.generated.h"
@@ -26,7 +28,7 @@ public:
 	//Only used for functional test
 	void StartSession();
 	void EndSession();
-
+	
 private:
 	void InitializeOnlineSubsystem();
 	void UnregisterOnlineSubsystemDelegates() const;
@@ -35,6 +37,8 @@ private:
 	APlayerController* GetPlayerControllerFromUserId(const FUniqueNetId& userId) const;
 	FString JoinSessionCompleteResultTypeToFString(EOnJoinSessionCompleteResult::Type type) const;
 
+	AMultiplayerSessionsGameMode* GetGameMode() const;
+	
 	void OnCreateSessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnDestroySessionComplete(FName sessionName, bool wasSuccessful) const;
 	void OnStartSessionComplete(FName sessionName, bool wasSuccessful) override;

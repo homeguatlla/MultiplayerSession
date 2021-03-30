@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "MSGameSession.h"
-#include "MSPlayerController.h"
 #include "NetworkGameInstance.h"
 #include "OnlineSessionSettings.h"
 #include "SessionsOnlineSubsystem.h"
@@ -11,7 +10,6 @@ const FName LobbyMap("LobbyMap");
 const FName GameMap("GameMap");
 const FName MainMap("MainMap");
 const FString MapPath("/Game/ThirdPersonCPP/Maps/");
-const FString PlayerUnknown("Unknown");
 
 AMSGameSession::AMSGameSession(const FObjectInitializer& objectInitializer)
 {
@@ -67,7 +65,7 @@ void AMSGameSession::DestroySessionAndLeaveGame()
 void AMSGameSession::StartGame()
 {
 	UE_LOG(LogTemp, Display, TEXT("AMSGameSession::StartGame ServerTravel"));
-	const FString url = MapPath + GameMap.ToString() + "?listen";
+	const FString url =  GetGameMode()->MapsPath + GetGameMode()->GameMapName.ToString() + "?listen";
 	GetWorld()->ServerTravel(url, true);
 }
 
@@ -126,7 +124,7 @@ void AMSGameSession::OnCreateSessionComplete(FName sessionName, bool wasSuccessf
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green,
 			FString::Printf(TEXT("AMSGameSession::OnCreateSessionComplete Session: %s"), *sessionName.ToString()));
 
-		UGameplayStatics::OpenLevel(GetWorld(), LobbyMap, true, "listen");
+		UGameplayStatics::OpenLevel(GetWorld(), GetGameMode()->LobbyMapName, true, "listen");
 	}
 	else
 	{
@@ -144,7 +142,7 @@ void AMSGameSession::OnDestroySessionComplete(FName sessionName, bool wasSuccess
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), MainMap, true);
+		UGameplayStatics::OpenLevel(GetWorld(), GetGameMode()->MainMapName, true);
 	}
 	else
 	{
@@ -184,7 +182,7 @@ void AMSGameSession::OnEndSessionComplete(FName sessionName, bool wasSuccessful)
 	
 	if (wasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), MainMap, true);
+		UGameplayStatics::OpenLevel(GetWorld(), GetGameMode()->MainMapName, true);
 	}
 	else
 	{
@@ -293,6 +291,12 @@ FString AMSGameSession::JoinSessionCompleteResultTypeToFString(EOnJoinSessionCom
 		default:
 			return "UnknownError";
 	}
+}
+
+AMultiplayerSessionsGameMode* AMSGameSession::GetGameMode() const
+{
+	const auto gameMode = GetWorld()->GetAuthGameMode();
+	return Cast<AMultiplayerSessionsGameMode>(gameMode);
 }
 
 bool AMSGameSession::IsLAN() const
